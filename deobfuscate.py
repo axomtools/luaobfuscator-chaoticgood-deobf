@@ -1,9 +1,8 @@
 import re
-from .decode import decodeescaped, lualiteral
-from .comments import removecomments
-from .clean import cleanlua
-from .extract import extractloadstring
-from .detect import matchcandidate
+from decode import decodeescaped, lualiteral
+from clean import cleanlua
+from extract import extractloadstring
+from detect import matchcandidate
 
 def deobfuscatechaoticgood(code):
     if not matchcandidate(code):
@@ -36,7 +35,7 @@ def _deobfuscate(content):
     out = content
     for src, dst in reps.items():
         out = out.replace(src, dst)
-    out = removecomments(out).strip()
+    out = out.strip()
     out = re.sub(r'\blocal\s+v\d+\s*=\s*string\.(?:char|byte|sub)\s*;?', "", out)
     out = re.sub(r'\blocal\s+v\d+\s*=\s*bit32\s+or\s+bit\s*;?', "", out)
     out = re.sub(r'\blocal\s+v\d+\s*=\s*v\d+\.bxor\s*;?', "", out)
