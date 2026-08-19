@@ -4,14 +4,14 @@ import json
 import webbrowser
 import urllib.parse
 import sys
-import deobfuscatechaoticgood
+from deobfuscate import deobfuscatechaoticgood
 
 htmlpage = r"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LuaObfuscator Chaotic Good Deobfuscator</title>
+<title>LuaObfuscator ChaoticGood Deobfuscator</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
 <style>
 body { background: #f8f9fa; padding: 20px; }
