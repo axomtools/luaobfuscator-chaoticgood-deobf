@@ -1,2 +1,2 @@
-from .deobfuscate import deobfuscatechaoticgood
+import deobfuscatechaoticgood
 from .webui import launchweb
