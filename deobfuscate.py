@@ -2,7 +2,8 @@ import re
 from decode import decodeescaped, lualiteral
 from clean import cleanlua
 from extract import extractloadstring
-from detect import matchcandidate
+from detect import matchcandidate, matchcandidateevil
+from evil import deobfuscatechaoticevil
 
 def deobfuscatechaoticgood(code):
     if not matchcandidate(code):
@@ -46,3 +47,10 @@ def _deobfuscate(content):
     if print_calls:
         return "\n".join(print_calls)
     return out if out else None
+
+def deobfuscatechaotic(code):
+    if matchcandidateevil(code):
+        return deobfuscatechaoticevil(code)
+    if matchcandidate(code):
+        return deobfuscatechaoticgood(code)
+    return None
