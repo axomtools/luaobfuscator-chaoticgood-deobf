@@ -16,40 +16,54 @@ htmlpage = r"""<!DOCTYPE html>
 <style id="themestyle">
 :root {
   --bg-body: #1a1a1a;
+  --bg-card: #2d2d2d;
+  --border-card: #444;
+  --text-primary: #e0e0e0;
+  --text-secondary: #aaa;
   --header-bg: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
   --header-text: #1a1a1a;
-  --card-bg: #2d2d2d;
-  --card-border: #444;
-  --text-color: #e0e0e0;
+  --header-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  --input-bg: #1e1e1e;
+  --input-text: #e0e0e0;
+  --input-border: #444;
+  --input-placeholder: #888;
   --btn-bg: #f7971e;
   --btn-hover: #d6851a;
   --btn-text: #1a1a1a;
   --upload-border: #666;
   --upload-hover: #f7971e;
   --upload-bg: #2d2d2d;
-  --input-bg: #1e1e1e;
-  --input-text: #e0e0e0;
-  --input-border: #444;
-  --placeholder-color: #888;
+  --upload-text: #e0e0e0;
+  --shadow: 0 4px 20px rgba(0,0,0,0.6);
+  --scrollbar-track: #2d2d2d;
+  --scrollbar-thumb: #666;
 }
-body { background: var(--bg-body); padding: 20px; font-family: 'Segoe UI', system-ui, sans-serif; }
+* { scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); }
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 6px; }
+
+body { background: var(--bg-body); padding: 20px; font-family: 'Segoe UI', system-ui, sans-serif; color: var(--text-primary); transition: all 0.2s; }
 .container { max-width: 1400px; }
-.header { background: var(--header-bg); color: var(--header-text); padding: 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+.header { background: var(--header-bg); color: var(--header-text); padding: 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: var(--header-shadow); }
 .header h1 { margin: 0; font-weight: 700; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 .header p { margin: 0; opacity: 0.9; }
-.card { background: var(--card-bg); border: 1px solid var(--card-border); box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
-.card-header { background: transparent; color: var(--text-color); border-bottom: 1px solid var(--card-border); }
+.card { background: var(--bg-card); border: 1px solid var(--border-card); box-shadow: var(--shadow); color: var(--text-primary); }
+.card-header { background: transparent; color: var(--text-primary); border-bottom: 1px solid var(--border-card); }
 textarea { font-family: 'Courier New', monospace; font-size: 14px; background: var(--input-bg); color: var(--input-text); border: 1px solid var(--input-border); border-radius: 8px; }
-textarea::placeholder { color: var(--placeholder-color); }
+textarea::placeholder { color: var(--input-placeholder); }
 .input-area, .output-area { height: 500px; }
 .btn-deobfuscate { background: var(--btn-bg); color: var(--btn-text); border: none; font-weight: 600; transition: 0.2s; }
 .btn-deobfuscate:hover { background: var(--btn-hover); color: var(--btn-text); transform: scale(1.02); }
-.upload-area { border: 2px dashed var(--upload-border); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s; background: var(--upload-bg); }
+.btn-outline-secondary, .btn-outline-success { color: var(--text-primary); border-color: var(--border-card); }
+.btn-outline-secondary:hover, .btn-outline-success:hover { background: var(--border-card); color: var(--text-primary); }
+.upload-area { border: 2px dashed var(--upload-border); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s; background: var(--upload-bg); color: var(--upload-text); }
 .upload-area:hover { border-color: var(--upload-hover); background: rgba(255,255,255,0.05); }
+.upload-area small { color: var(--input-placeholder); }
 .theme-selector { position: fixed; top: 20px; right: 20px; z-index: 1000; }
-.theme-selector select { background: #2d2d2d; color: #e0e0e0; border: 1px solid #555; border-radius: 8px; padding: 8px 16px; font-size: 14px; cursor: pointer; }
-.theme-selector select option { background: #2d2d2d; color: #e0e0e0; }
-.status { color: var(--text-color); }
+.theme-selector select { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-card); border-radius: 8px; padding: 8px 16px; font-size: 14px; cursor: pointer; }
+.theme-selector select option { background: var(--bg-card); color: var(--text-primary); }
+.status { color: var(--text-secondary); }
 </style>
 </head>
 <body>
@@ -70,13 +84,13 @@ textarea::placeholder { color: var(--placeholder-color); }
 <div class="row">
 <div class="col-md-6">
 <div class="card shadow-sm">
-<div class="card-header bg-white fw-bold" style="background:transparent!important;">Input</div>
+<div class="card-header fw-bold">Input</div>
 <div class="card-body">
 <div class="upload-area" id="dropzone">
 <label for="fileinput" class="d-block" style="cursor:pointer;">
 <span style="font-size: 2rem;">📁</span><br>
 Click to select a .lua file<br>
-<small style="color:var(--placeholder-color);">or drag & drop</small>
+<small>or drag & drop</small>
 </label>
 <input type="file" id="fileinput" accept=".lua,.txt" style="display:none;">
 </div>
@@ -86,13 +100,13 @@ Click to select a .lua file<br>
 </div>
 <div class="col-md-6">
 <div class="card shadow-sm">
-<div class="card-header bg-white fw-bold" style="background:transparent!important;">Output</div>
+<div class="card-header fw-bold">Output</div>
 <div class="card-body">
 <textarea id="outputcode" class="form-control output-area" readonly placeholder="deobfuscated code will appear here" style="font-family: 'Courier New', monospace;"></textarea>
 <div class="d-flex gap-2 mt-3">
 <button id="deobfbtn" class="btn btn-deobfuscate flex-grow-1">🎣 Deobfuscate</button>
-<button id="copybtn" class="btn btn-outline-secondary" style="color:var(--text-color);border-color:var(--card-border);">📋 Copy</button>
-<button id="downloadbtn" class="btn btn-outline-success" style="color:var(--text-color);border-color:var(--card-border);">⬇ Download</button>
+<button id="copybtn" class="btn btn-outline-secondary">📋 Copy</button>
+<button id="downloadbtn" class="btn btn-outline-success">⬇ Download</button>
 </div>
 <div id="status" class="mt-2 text-muted small status"></div>
 </div>
@@ -104,93 +118,123 @@ Click to select a .lua file<br>
 const themes = {
   ember: {
     '--bg-body': '#1a1a1a',
+    '--bg-card': '#2d2d2d',
+    '--border-card': '#444',
+    '--text-primary': '#e0e0e0',
+    '--text-secondary': '#aaa',
     '--header-bg': 'linear-gradient(135deg, #f7971e 0%, #ffd200 100%)',
     '--header-text': '#1a1a1a',
-    '--card-bg': '#2d2d2d',
-    '--card-border': '#444',
-    '--text-color': '#e0e0e0',
+    '--header-shadow': '0 8px 32px rgba(0,0,0,0.5)',
+    '--input-bg': '#1e1e1e',
+    '--input-text': '#e0e0e0',
+    '--input-border': '#444',
+    '--input-placeholder': '#888',
     '--btn-bg': '#f7971e',
     '--btn-hover': '#d6851a',
     '--btn-text': '#1a1a1a',
     '--upload-border': '#666',
     '--upload-hover': '#f7971e',
     '--upload-bg': '#2d2d2d',
-    '--input-bg': '#1e1e1e',
-    '--input-text': '#e0e0e0',
-    '--input-border': '#444',
-    '--placeholder-color': '#888'
+    '--upload-text': '#e0e0e0',
+    '--shadow': '0 4px 20px rgba(0,0,0,0.6)',
+    '--scrollbar-track': '#2d2d2d',
+    '--scrollbar-thumb': '#666'
   },
   burningblack: {
     '--bg-body': '#0a0a0a',
+    '--bg-card': '#111111',
+    '--border-card': '#2a2a2a',
+    '--text-primary': '#ccbbaa',
+    '--text-secondary': '#887766',
     '--header-bg': 'linear-gradient(135deg, #1a0a00 0%, #3d1a00 100%)',
     '--header-text': '#ff6a00',
-    '--card-bg': '#111111',
-    '--card-border': '#2a2a2a',
-    '--text-color': '#ccbbaa',
-    '--btn-bg': '#ff4500',
-    '--btn-hover': '#cc3700',
-    '--btn-text': '#fff',
-    '--upload-border': '#3a1a00',
-    '--upload-hover': '#ff4500',
-    '--upload-bg': '#0d0d0d',
+    '--header-shadow': '0 8px 32px rgba(255,69,0,0.3)',
     '--input-bg': '#0a0a0a',
     '--input-text': '#ccbbaa',
     '--input-border': '#2a1a0a',
-    '--placeholder-color': '#554433'
+    '--input-placeholder': '#554433',
+    '--btn-bg': '#ff4500',
+    '--btn-hover': '#cc3700',
+    '--btn-text': '#ffffff',
+    '--upload-border': '#3a1a00',
+    '--upload-hover': '#ff4500',
+    '--upload-bg': '#0d0d0d',
+    '--upload-text': '#ccbbaa',
+    '--shadow': '0 4px 20px rgba(255,69,0,0.2)',
+    '--scrollbar-track': '#111',
+    '--scrollbar-thumb': '#3a1a00'
   },
   inferno: {
     '--bg-body': '#1a0a05',
+    '--bg-card': '#2a1208',
+    '--border-card': '#662200',
+    '--text-primary': '#ffccaa',
+    '--text-secondary': '#aa7755',
     '--header-bg': 'linear-gradient(135deg, #ff0000 0%, #ff6600 50%, #ffcc00 100%)',
     '--header-text': '#ffffff',
-    '--card-bg': '#2a1208',
-    '--card-border': '#662200',
-    '--text-color': '#ffccaa',
-    '--btn-bg': '#ff3300',
-    '--btn-hover': '#cc2900',
-    '--btn-text': '#fff',
-    '--upload-border': '#662200',
-    '--upload-hover': '#ff3300',
-    '--upload-bg': '#1a0a05',
+    '--header-shadow': '0 8px 32px rgba(255,0,0,0.4)',
     '--input-bg': '#0d0502',
     '--input-text': '#ffccaa',
     '--input-border': '#441100',
-    '--placeholder-color': '#663322'
+    '--input-placeholder': '#663322',
+    '--btn-bg': '#ff3300',
+    '--btn-hover': '#cc2900',
+    '--btn-text': '#ffffff',
+    '--upload-border': '#662200',
+    '--upload-hover': '#ff3300',
+    '--upload-bg': '#1a0a05',
+    '--upload-text': '#ffccaa',
+    '--shadow': '0 4px 20px rgba(255,51,0,0.3)',
+    '--scrollbar-track': '#1a0a05',
+    '--scrollbar-thumb': '#662200'
   },
   nightfire: {
     '--bg-body': '#0d0d0f',
+    '--bg-card': '#14141a',
+    '--border-card': '#2a2a40',
+    '--text-primary': '#c8c0b0',
+    '--text-secondary': '#8888aa',
     '--header-bg': 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
     '--header-text': '#e0a96d',
-    '--card-bg': '#14141a',
-    '--card-border': '#2a2a40',
-    '--text-color': '#c8c0b0',
-    '--btn-bg': '#e07c1a',
-    '--btn-hover': '#b86212',
-    '--btn-text': '#fff',
-    '--upload-border': '#2a2a40',
-    '--upload-hover': '#e07c1a',
-    '--upload-bg': '#0d0d12',
+    '--header-shadow': '0 8px 32px rgba(224,169,109,0.2)',
     '--input-bg': '#08080c',
     '--input-text': '#c8c0b0',
     '--input-border': '#1a1a2e',
-    '--placeholder-color': '#555566'
+    '--input-placeholder': '#555566',
+    '--btn-bg': '#e07c1a',
+    '--btn-hover': '#b86212',
+    '--btn-text': '#ffffff',
+    '--upload-border': '#2a2a40',
+    '--upload-hover': '#e07c1a',
+    '--upload-bg': '#0d0d12',
+    '--upload-text': '#c8c0b0',
+    '--shadow': '0 4px 20px rgba(224,169,109,0.1)',
+    '--scrollbar-track': '#0d0d0f',
+    '--scrollbar-thumb': '#2a2a40'
   },
   cyberpunk: {
     '--bg-body': '#0a0510',
+    '--bg-card': '#120a1a',
+    '--border-card': '#3a1a4a',
+    '--text-primary': '#ffccdd',
+    '--text-secondary': '#aa88bb',
     '--header-bg': 'linear-gradient(135deg, #ff007f 0%, #ff5500 50%, #ffaa00 100%)',
     '--header-text': '#ffffff',
-    '--card-bg': '#120a1a',
-    '--card-border': '#3a1a4a',
-    '--text-color': '#ffccdd',
-    '--btn-bg': '#ff007f',
-    '--btn-hover': '#cc0066',
-    '--btn-text': '#fff',
-    '--upload-border': '#4a1a5a',
-    '--upload-hover': '#ff007f',
-    '--upload-bg': '#0a0510',
+    '--header-shadow': '0 8px 32px rgba(255,0,127,0.4)',
     '--input-bg': '#05020a',
     '--input-text': '#ffccdd',
     '--input-border': '#2a0a3a',
-    '--placeholder-color': '#663366'
+    '--input-placeholder': '#663366',
+    '--btn-bg': '#ff007f',
+    '--btn-hover': '#cc0066',
+    '--btn-text': '#ffffff',
+    '--upload-border': '#4a1a5a',
+    '--upload-hover': '#ff007f',
+    '--upload-bg': '#0a0510',
+    '--upload-text': '#ffccdd',
+    '--shadow': '0 4px 20px rgba(255,0,127,0.3)',
+    '--scrollbar-track': '#0a0510',
+    '--scrollbar-thumb': '#3a1a4a'
   }
 };
 
