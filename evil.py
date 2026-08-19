@@ -2,6 +2,7 @@ import struct
 import re
 from decode import decodeescaped
 from foldconst import foldconst, skws, rdnum, isid, isdig, isws
+from detect import matchcandidateevil
 
 class reader:
     def __init__(self, buf):
