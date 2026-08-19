@@ -16,14 +16,14 @@ htmlpage = r"""<!DOCTYPE html>
 <style>
 body { background: #f8f9fa; padding: 20px; }
 .container { max-width: 1400px; }
-.header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+.header { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
 .header h1 { margin: 0; font-weight: 300; }
 textarea { font-family: 'Courier New', monospace; font-size: 14px; }
 .input-area, .output-area { height: 500px; }
-.btn-deobfuscate { background: #764ba2; color: white; }
-.btn-deobfuscate:hover { background: #5a3a7a; color: white; }
+.btn-deobfuscate { background: #f5576c; color: white; }
+.btn-deobfuscate:hover { background: #c0392b; color: white; }
 .upload-area { border: 2px dashed #ced4da; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s; }
-.upload-area:hover { border-color: #764ba2; background: #f3f0ff; }
+.upload-area:hover { border-color: #f5576c; background: #fff5f5; }
 </style>
 </head>
 <body>
@@ -53,7 +53,7 @@ Click to select a .lua file<br>
 <div class="card shadow-sm">
 <div class="card-header bg-white fw-bold">Output</div>
 <div class="card-body">
-<textarea id="outputcode" class="form-control output-area" readonly placeholder="deobfuscated code will appear here"></textarea>
+<textarea id="outputcode" class="form-control output-area" readonly placeholder="deobfuscated code will appear here" style="font-family: 'Courier New', monospace;"></textarea>
 <div class="d-flex gap-2 mt-3">
 <button id="deobfbtn" class="btn btn-deobfuscate flex-grow-1">🎣 Deobfuscate</button>
 <button id="copybtn" class="btn btn-outline-secondary">📋 Copy</button>
@@ -83,7 +83,7 @@ reader.readAsText(this.files[0]);
 }
 });
 
-dropzone.addEventListener('dragover', function(e) { e.preventDefault(); this.style.borderColor = '#764ba2'; });
+dropzone.addEventListener('dragover', function(e) { e.preventDefault(); this.style.borderColor = '#f5576c'; });
 dropzone.addEventListener('dragleave', function(e) { this.style.borderColor = '#ced4da'; });
 dropzone.addEventListener('drop', function(e) {
 e.preventDefault();
@@ -183,10 +183,7 @@ class webhandler(http.server.BaseHTTPRequestHandler):
         pass
 
 def launchweb(port=8080):
-    # Enable address reuse so we can restart quickly
     socketserver.TCPServer.allow_reuse_address = True
-
-    # Try the given port; if busy, try the next ones
     for attempt in range(10):
         try:
             with socketserver.TCPServer(("", port + attempt), webhandler) as httpd:
