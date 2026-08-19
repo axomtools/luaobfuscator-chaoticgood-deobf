@@ -4,7 +4,7 @@ import json
 import webbrowser
 import urllib.parse
 import sys
-from deobfuscate import deobfuscatechaoticgood
+from deobfuscate import deobfuscatechaotic
 
 htmlpage = r"""<!DOCTYPE html>
 <html>
@@ -37,6 +37,7 @@ htmlpage = r"""<!DOCTYPE html>
   --shadow: 0 4px 20px rgba(0,0,0,0.6);
   --scrollbar-track: #2d2d2d;
   --scrollbar-thumb: #666;
+  --status-text: #aaa;
 }
 * { scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); }
 ::-webkit-scrollbar { width: 10px; }
@@ -63,17 +64,33 @@ textarea::placeholder { color: var(--input-placeholder); }
 .theme-selector { position: fixed; top: 20px; right: 20px; z-index: 1000; }
 .theme-selector select { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-card); border-radius: 8px; padding: 8px 16px; font-size: 14px; cursor: pointer; }
 .theme-selector select option { background: var(--bg-card); color: var(--text-primary); }
-.status { color: var(--text-secondary); }
+.status { color: var(--status-text); }
 </style>
 </head>
 <body>
 <div class="theme-selector">
 <select id="themeSwitcher">
-<option value="ember">🔥 Ember</option>
-<option value="burningblack">🖤 Burning Black</option>
-<option value="inferno">🔥 Inferno</option>
-<option value="nightfire">🌙 Nightfire</option>
-<option value="cyberpunk">💜 Cyberpunk Inferno</option>
+<optgroup label="🔥 Dark Fire">
+<option value="ember">Ember</option>
+<option value="burningblack">Burning Black</option>
+<option value="inferno">Inferno</option>
+<option value="nightfire">Nightfire</option>
+<option value="cyberpunk">Cyberpunk Inferno</option>
+<option value="volcanic">Volcanic</option>
+<option value="darkvoid">Dark Void</option>
+</optgroup>
+<optgroup label="☀️ Light Fire">
+<option value="lightember">Light Ember</option>
+<option value="lightinferno">Light Inferno</option>
+<option value="lightfire">Light Fire</option>
+<option value="lightcyberpunk">Light Cyberpunk</option>
+<option value="lightrose">Light Rose</option>
+<option value="lightcitrus">Light Citrus</option>
+<option value="lightlava">Light Lava</option>
+</optgroup>
+<optgroup label="🎨 Other">
+<option value="classic">Classic</option>
+</optgroup>
 </select>
 </div>
 <div class="container">
@@ -117,124 +134,184 @@ Click to select a .lua file<br>
 <script>
 const themes = {
   ember: {
-    '--bg-body': '#1a1a1a',
-    '--bg-card': '#2d2d2d',
-    '--border-card': '#444',
-    '--text-primary': '#e0e0e0',
-    '--text-secondary': '#aaa',
+    '--bg-body': '#1a1a1a', '--bg-card': '#2d2d2d', '--border-card': '#444',
+    '--text-primary': '#e0e0e0', '--text-secondary': '#aaa', '--status-text': '#aaa',
     '--header-bg': 'linear-gradient(135deg, #f7971e 0%, #ffd200 100%)',
-    '--header-text': '#1a1a1a',
-    '--header-shadow': '0 8px 32px rgba(0,0,0,0.5)',
-    '--input-bg': '#1e1e1e',
-    '--input-text': '#e0e0e0',
-    '--input-border': '#444',
-    '--input-placeholder': '#888',
-    '--btn-bg': '#f7971e',
-    '--btn-hover': '#d6851a',
-    '--btn-text': '#1a1a1a',
-    '--upload-border': '#666',
-    '--upload-hover': '#f7971e',
-    '--upload-bg': '#2d2d2d',
-    '--upload-text': '#e0e0e0',
+    '--header-text': '#1a1a1a', '--header-shadow': '0 8px 32px rgba(0,0,0,0.5)',
+    '--input-bg': '#1e1e1e', '--input-text': '#e0e0e0', '--input-border': '#444',
+    '--input-placeholder': '#888', '--btn-bg': '#f7971e', '--btn-hover': '#d6851a',
+    '--btn-text': '#1a1a1a', '--upload-border': '#666', '--upload-hover': '#f7971e',
+    '--upload-bg': '#2d2d2d', '--upload-text': '#e0e0e0',
     '--shadow': '0 4px 20px rgba(0,0,0,0.6)',
-    '--scrollbar-track': '#2d2d2d',
-    '--scrollbar-thumb': '#666'
+    '--scrollbar-track': '#2d2d2d', '--scrollbar-thumb': '#666'
   },
   burningblack: {
-    '--bg-body': '#0a0a0a',
-    '--bg-card': '#111111',
-    '--border-card': '#2a2a2a',
-    '--text-primary': '#ccbbaa',
-    '--text-secondary': '#887766',
+    '--bg-body': '#0a0a0a', '--bg-card': '#111111', '--border-card': '#2a2a2a',
+    '--text-primary': '#ccbbaa', '--text-secondary': '#887766', '--status-text': '#887766',
     '--header-bg': 'linear-gradient(135deg, #1a0a00 0%, #3d1a00 100%)',
-    '--header-text': '#ff6a00',
-    '--header-shadow': '0 8px 32px rgba(255,69,0,0.3)',
-    '--input-bg': '#0a0a0a',
-    '--input-text': '#ccbbaa',
-    '--input-border': '#2a1a0a',
-    '--input-placeholder': '#554433',
-    '--btn-bg': '#ff4500',
-    '--btn-hover': '#cc3700',
-    '--btn-text': '#ffffff',
-    '--upload-border': '#3a1a00',
-    '--upload-hover': '#ff4500',
-    '--upload-bg': '#0d0d0d',
-    '--upload-text': '#ccbbaa',
+    '--header-text': '#ff6a00', '--header-shadow': '0 8px 32px rgba(255,69,0,0.3)',
+    '--input-bg': '#0a0a0a', '--input-text': '#ccbbaa', '--input-border': '#2a1a0a',
+    '--input-placeholder': '#554433', '--btn-bg': '#ff4500', '--btn-hover': '#cc3700',
+    '--btn-text': '#ffffff', '--upload-border': '#3a1a00', '--upload-hover': '#ff4500',
+    '--upload-bg': '#0d0d0d', '--upload-text': '#ccbbaa',
     '--shadow': '0 4px 20px rgba(255,69,0,0.2)',
-    '--scrollbar-track': '#111',
-    '--scrollbar-thumb': '#3a1a00'
+    '--scrollbar-track': '#111', '--scrollbar-thumb': '#3a1a00'
   },
   inferno: {
-    '--bg-body': '#1a0a05',
-    '--bg-card': '#2a1208',
-    '--border-card': '#662200',
-    '--text-primary': '#ffccaa',
-    '--text-secondary': '#aa7755',
+    '--bg-body': '#1a0a05', '--bg-card': '#2a1208', '--border-card': '#662200',
+    '--text-primary': '#ffccaa', '--text-secondary': '#aa7755', '--status-text': '#aa7755',
     '--header-bg': 'linear-gradient(135deg, #ff0000 0%, #ff6600 50%, #ffcc00 100%)',
-    '--header-text': '#ffffff',
-    '--header-shadow': '0 8px 32px rgba(255,0,0,0.4)',
-    '--input-bg': '#0d0502',
-    '--input-text': '#ffccaa',
-    '--input-border': '#441100',
-    '--input-placeholder': '#663322',
-    '--btn-bg': '#ff3300',
-    '--btn-hover': '#cc2900',
-    '--btn-text': '#ffffff',
-    '--upload-border': '#662200',
-    '--upload-hover': '#ff3300',
-    '--upload-bg': '#1a0a05',
-    '--upload-text': '#ffccaa',
+    '--header-text': '#ffffff', '--header-shadow': '0 8px 32px rgba(255,0,0,0.4)',
+    '--input-bg': '#0d0502', '--input-text': '#ffccaa', '--input-border': '#441100',
+    '--input-placeholder': '#663322', '--btn-bg': '#ff3300', '--btn-hover': '#cc2900',
+    '--btn-text': '#ffffff', '--upload-border': '#662200', '--upload-hover': '#ff3300',
+    '--upload-bg': '#1a0a05', '--upload-text': '#ffccaa',
     '--shadow': '0 4px 20px rgba(255,51,0,0.3)',
-    '--scrollbar-track': '#1a0a05',
-    '--scrollbar-thumb': '#662200'
+    '--scrollbar-track': '#1a0a05', '--scrollbar-thumb': '#662200'
   },
   nightfire: {
-    '--bg-body': '#0d0d0f',
-    '--bg-card': '#14141a',
-    '--border-card': '#2a2a40',
-    '--text-primary': '#c8c0b0',
-    '--text-secondary': '#8888aa',
+    '--bg-body': '#0d0d0f', '--bg-card': '#14141a', '--border-card': '#2a2a40',
+    '--text-primary': '#c8c0b0', '--text-secondary': '#8888aa', '--status-text': '#8888aa',
     '--header-bg': 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
-    '--header-text': '#e0a96d',
-    '--header-shadow': '0 8px 32px rgba(224,169,109,0.2)',
-    '--input-bg': '#08080c',
-    '--input-text': '#c8c0b0',
-    '--input-border': '#1a1a2e',
-    '--input-placeholder': '#555566',
-    '--btn-bg': '#e07c1a',
-    '--btn-hover': '#b86212',
-    '--btn-text': '#ffffff',
-    '--upload-border': '#2a2a40',
-    '--upload-hover': '#e07c1a',
-    '--upload-bg': '#0d0d12',
-    '--upload-text': '#c8c0b0',
+    '--header-text': '#e0a96d', '--header-shadow': '0 8px 32px rgba(224,169,109,0.2)',
+    '--input-bg': '#08080c', '--input-text': '#c8c0b0', '--input-border': '#1a1a2e',
+    '--input-placeholder': '#555566', '--btn-bg': '#e07c1a', '--btn-hover': '#b86212',
+    '--btn-text': '#ffffff', '--upload-border': '#2a2a40', '--upload-hover': '#e07c1a',
+    '--upload-bg': '#0d0d12', '--upload-text': '#c8c0b0',
     '--shadow': '0 4px 20px rgba(224,169,109,0.1)',
-    '--scrollbar-track': '#0d0d0f',
-    '--scrollbar-thumb': '#2a2a40'
+    '--scrollbar-track': '#0d0d0f', '--scrollbar-thumb': '#2a2a40'
   },
   cyberpunk: {
-    '--bg-body': '#0a0510',
-    '--bg-card': '#120a1a',
-    '--border-card': '#3a1a4a',
-    '--text-primary': '#ffccdd',
-    '--text-secondary': '#aa88bb',
+    '--bg-body': '#0a0510', '--bg-card': '#120a1a', '--border-card': '#3a1a4a',
+    '--text-primary': '#ffccdd', '--text-secondary': '#aa88bb', '--status-text': '#aa88bb',
     '--header-bg': 'linear-gradient(135deg, #ff007f 0%, #ff5500 50%, #ffaa00 100%)',
-    '--header-text': '#ffffff',
-    '--header-shadow': '0 8px 32px rgba(255,0,127,0.4)',
-    '--input-bg': '#05020a',
-    '--input-text': '#ffccdd',
-    '--input-border': '#2a0a3a',
-    '--input-placeholder': '#663366',
-    '--btn-bg': '#ff007f',
-    '--btn-hover': '#cc0066',
-    '--btn-text': '#ffffff',
-    '--upload-border': '#4a1a5a',
-    '--upload-hover': '#ff007f',
-    '--upload-bg': '#0a0510',
-    '--upload-text': '#ffccdd',
+    '--header-text': '#ffffff', '--header-shadow': '0 8px 32px rgba(255,0,127,0.4)',
+    '--input-bg': '#05020a', '--input-text': '#ffccdd', '--input-border': '#2a0a3a',
+    '--input-placeholder': '#663366', '--btn-bg': '#ff007f', '--btn-hover': '#cc0066',
+    '--btn-text': '#ffffff', '--upload-border': '#4a1a5a', '--upload-hover': '#ff007f',
+    '--upload-bg': '#0a0510', '--upload-text': '#ffccdd',
     '--shadow': '0 4px 20px rgba(255,0,127,0.3)',
-    '--scrollbar-track': '#0a0510',
-    '--scrollbar-thumb': '#3a1a4a'
+    '--scrollbar-track': '#0a0510', '--scrollbar-thumb': '#3a1a4a'
+  },
+  volcanic: {
+    '--bg-body': '#1a0a05', '--bg-card': '#2a0f0a', '--border-card': '#8b3a2a',
+    '--text-primary': '#ffcc88', '--text-secondary': '#cc8855', '--status-text': '#cc8855',
+    '--header-bg': 'linear-gradient(135deg, #8b0000 0%, #ff4500 50%, #ff6a00 100%)',
+    '--header-text': '#ffffff', '--header-shadow': '0 8px 32px rgba(139,0,0,0.6)',
+    '--input-bg': '#1a0a05', '--input-text': '#ffcc88', '--input-border': '#8b3a2a',
+    '--input-placeholder': '#8b3a2a', '--btn-bg': '#8b0000', '--btn-hover': '#ff4500',
+    '--btn-text': '#ffffff', '--upload-border': '#8b3a2a', '--upload-hover': '#ff4500',
+    '--upload-bg': '#2a0f0a', '--upload-text': '#ffcc88',
+    '--shadow': '0 4px 20px rgba(139,0,0,0.4)',
+    '--scrollbar-track': '#1a0a05', '--scrollbar-thumb': '#8b3a2a'
+  },
+  darkvoid: {
+    '--bg-body': '#000000', '--bg-card': '#0a0a0a', '--border-card': '#1a1a1a',
+    '--text-primary': '#cccccc', '--text-secondary': '#888888', '--status-text': '#888888',
+    '--header-bg': 'linear-gradient(135deg, #111 0%, #222 100%)',
+    '--header-text': '#ffffff', '--header-shadow': '0 8px 32px rgba(255,255,255,0.05)',
+    '--input-bg': '#050505', '--input-text': '#cccccc', '--input-border': '#1a1a1a',
+    '--input-placeholder': '#444', '--btn-bg': '#333', '--btn-hover': '#555',
+    '--btn-text': '#ffffff', '--upload-border': '#222', '--upload-hover': '#555',
+    '--upload-bg': '#0a0a0a', '--upload-text': '#cccccc',
+    '--shadow': '0 4px 20px rgba(0,0,0,0.8)',
+    '--scrollbar-track': '#0a0a0a', '--scrollbar-thumb': '#222'
+  },
+  lightember: {
+    '--bg-body': '#f5f0e8', '--bg-card': '#ffffff', '--border-card': '#e0d5c8',
+    '--text-primary': '#3d2a1a', '--text-secondary': '#8a7a6a', '--status-text': '#8a7a6a',
+    '--header-bg': 'linear-gradient(135deg, #f7971e 0%, #ffd200 100%)',
+    '--header-text': '#1a1a1a', '--header-shadow': '0 8px 32px rgba(247,151,30,0.3)',
+    '--input-bg': '#faf8f5', '--input-text': '#3d2a1a', '--input-border': '#e0d5c8',
+    '--input-placeholder': '#b0a090', '--btn-bg': '#f7971e', '--btn-hover': '#d6851a',
+    '--btn-text': '#1a1a1a', '--upload-border': '#d5c8b8', '--upload-hover': '#f7971e',
+    '--upload-bg': '#faf8f5', '--upload-text': '#3d2a1a',
+    '--shadow': '0 4px 20px rgba(0,0,0,0.08)',
+    '--scrollbar-track': '#f0e8dc', '--scrollbar-thumb': '#d5c8b8'
+  },
+  lightinferno: {
+    '--bg-body': '#f5e8e0', '--bg-card': '#ffffff', '--border-card': '#e8c8b0',
+    '--text-primary': '#3a1a0a', '--text-secondary': '#8a5a3a', '--status-text': '#8a5a3a',
+    '--header-bg': 'linear-gradient(135deg, #ff3300 0%, #ff8800 50%, #ffcc00 100%)',
+    '--header-text': '#ffffff', '--header-shadow': '0 8px 32px rgba(255,51,0,0.3)',
+    '--input-bg': '#fdf8f5', '--input-text': '#3a1a0a', '--input-border': '#e8c8b0',
+    '--input-placeholder': '#b08a70', '--btn-bg': '#ff3300', '--btn-hover': '#cc2900',
+    '--btn-text': '#ffffff', '--upload-border': '#e8c8b0', '--upload-hover': '#ff3300',
+    '--upload-bg': '#fdf8f5', '--upload-text': '#3a1a0a',
+    '--shadow': '0 4px 20px rgba(0,0,0,0.08)',
+    '--scrollbar-track': '#f0e0d0', '--scrollbar-thumb': '#e8c8b0'
+  },
+  lightfire: {
+    '--bg-body': '#faf0e8', '--bg-card': '#ffffff', '--border-card': '#f0d8c0',
+    '--text-primary': '#2a1a0a', '--text-secondary': '#8a6a4a', '--status-text': '#8a6a4a',
+    '--header-bg': 'linear-gradient(135deg, #ff6a00 0%, #ffaa00 50%, #ffdd00 100%)',
+    '--header-text': '#ffffff', '--header-shadow': '0 8px 32px rgba(255,106,0,0.3)',
+    '--input-bg': '#fffcf8', '--input-text': '#2a1a0a', '--input-border': '#f0d8c0',
+    '--input-placeholder': '#b09070', '--btn-bg': '#ff6a00', '--btn-hover': '#cc5500',
+    '--btn-text': '#ffffff', '--upload-border': '#f0d8c0', '--upload-hover': '#ff6a00',
+    '--upload-bg': '#fffcf8', '--upload-text': '#2a1a0a',
+    '--shadow': '0 4px 20px rgba(0,0,0,0.06)',
+    '--scrollbar-track': '#f5ece0', '--scrollbar-thumb': '#f0d8c0'
+  },
+  lightcyberpunk: {
+    '--bg-body': '#f5f0f8', '--bg-card': '#ffffff', '--border-card': '#e8d0f0',
+    '--text-primary': '#2a0a3a', '--text-secondary': '#8a6a9a', '--status-text': '#8a6a9a',
+    '--header-bg': 'linear-gradient(135deg, #ff007f 0%, #ff5500 50%, #ffaa00 100%)',
+    '--header-text': '#ffffff', '--header-shadow': '0 8px 32px rgba(255,0,127,0.2)',
+    '--input-bg': '#fcf8ff', '--input-text': '#2a0a3a', '--input-border': '#e8d0f0',
+    '--input-placeholder': '#b090b0', '--btn-bg': '#ff007f', '--btn-hover': '#cc0066',
+    '--btn-text': '#ffffff', '--upload-border': '#e8d0f0', '--upload-hover': '#ff007f',
+    '--upload-bg': '#fcf8ff', '--upload-text': '#2a0a3a',
+    '--shadow': '0 4px 20px rgba(0,0,0,0.06)',
+    '--scrollbar-track': '#f0ecf5', '--scrollbar-thumb': '#e8d0f0'
+  },
+  lightrose: {
+    '--bg-body': '#fdf5f5', '--bg-card': '#ffffff', '--border-card': '#f0d8d8',
+    '--text-primary': '#3a1a1a', '--text-secondary': '#8a6a6a', '--status-text': '#8a6a6a',
+    '--header-bg': 'linear-gradient(135deg, #ff6b8a 0%, #ffb3b3 100%)',
+    '--header-text': '#ffffff', '--header-shadow': '0 8px 32px rgba(255,107,138,0.3)',
+    '--input-bg': '#fffafa', '--input-text': '#3a1a1a', '--input-border': '#f0d8d8',
+    '--input-placeholder': '#b09090', '--btn-bg': '#ff6b8a', '--btn-hover': '#e05575',
+    '--btn-text': '#ffffff', '--upload-border': '#f0d8d8', '--upload-hover': '#ff6b8a',
+    '--upload-bg': '#fffafa', '--upload-text': '#3a1a1a',
+    '--shadow': '0 4px 20px rgba(0,0,0,0.06)',
+    '--scrollbar-track': '#f8f0f0', '--scrollbar-thumb': '#f0d8d8'
+  },
+  lightcitrus: {
+    '--bg-body': '#f8f5e8', '--bg-card': '#ffffff', '--border-card': '#f0e8c8',
+    '--text-primary': '#2a2a0a', '--text-secondary': '#8a8a4a', '--status-text': '#8a8a4a',
+    '--header-bg': 'linear-gradient(135deg, #ffdd00 0%, #ff8800 100%)',
+    '--header-text': '#1a1a0a', '--header-shadow': '0 8px 32px rgba(255,221,0,0.3)',
+    '--input-bg': '#fdfcf5', '--input-text': '#2a2a0a', '--input-border': '#f0e8c8',
+    '--input-placeholder': '#b0a870', '--btn-bg': '#ffdd00', '--btn-hover': '#e6c400',
+    '--btn-text': '#1a1a0a', '--upload-border': '#f0e8c8', '--upload-hover': '#ffdd00',
+    '--upload-bg': '#fdfcf5', '--upload-text': '#2a2a0a',
+    '--shadow': '0 4px 20px rgba(0,0,0,0.06)',
+    '--scrollbar-track': '#f5f0e0', '--scrollbar-thumb': '#f0e8c8'
+  },
+  lightlava: {
+    '--bg-body': '#f5ece0', '--bg-card': '#ffffff', '--border-card': '#e8d0b8',
+    '--text-primary': '#3a1a0a', '--text-secondary': '#8a6a4a', '--status-text': '#8a6a4a',
+    '--header-bg': 'linear-gradient(135deg, #ff4500 0%, #ff6a00 50%, #ff8800 100%)',
+    '--header-text': '#ffffff', '--header-shadow': '0 8px 32px rgba(255,69,0,0.2)',
+    '--input-bg': '#fcf8f0', '--input-text': '#3a1a0a', '--input-border': '#e8d0b8',
+    '--input-placeholder': '#b09878', '--btn-bg': '#ff4500', '--btn-hover': '#cc3700',
+    '--btn-text': '#ffffff', '--upload-border': '#e8d0b8', '--upload-hover': '#ff4500',
+    '--upload-bg': '#fcf8f0', '--upload-text': '#3a1a0a',
+    '--shadow': '0 4px 20px rgba(0,0,0,0.06)',
+    '--scrollbar-track': '#f5ece0', '--scrollbar-thumb': '#e8d0b8'
+  },
+  classic: {
+    '--bg-body': '#f8f9fa', '--bg-card': '#ffffff', '--border-card': '#dee2e6',
+    '--text-primary': '#212529', '--text-secondary': '#6c757d', '--status-text': '#6c757d',
+    '--header-bg': 'linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%)',
+    '--header-text': '#ffffff', '--header-shadow': '0 8px 32px rgba(13,110,253,0.3)',
+    '--input-bg': '#ffffff', '--input-text': '#212529', '--input-border': '#ced4da',
+    '--input-placeholder': '#6c757d', '--btn-bg': '#0d6efd', '--btn-hover': '#0a58ca',
+    '--btn-text': '#ffffff', '--upload-border': '#ced4da', '--upload-hover': '#0d6efd',
+    '--upload-bg': '#ffffff', '--upload-text': '#212529',
+    '--shadow': '0 4px 20px rgba(0,0,0,0.08)',
+    '--scrollbar-track': '#f1f3f5', '--scrollbar-thumb': '#ced4da'
   }
 };
 
@@ -351,9 +428,9 @@ class webhandler(http.server.BaseHTTPRequestHandler):
         except:
             self.send_error(400, "invalid json")
             return
-        result = deobfuscatechaoticgood(code)
+        result = deobfuscatechaotic(code)
         if result is None:
-            response = {"error": "not chaotic good obfuscation or deobfuscation failed"}
+            response = {"error": "not chaotic good or evil obfuscation or deobfuscation failed"}
         else:
             response = {"result": result}
         self.send_response(200)
