@@ -150,13 +150,13 @@ statusDiv.textContent = '⬇ Download started.';
 """
 
 class webhandler(http.server.BaseHTTPRequestHandler):
-    def do_get(self):
+    def do_GET(self):
         self.send_response(200)
         self.send_header("content-type", "text/html; charset=utf-8")
         self.end_headers()
         self.wfile.write(htmlpage.encode("utf-8"))
 
-    def do_post(self):
+    def do_POST(self):
         if self.path != "/deobfuscate":
             self.send_response(404)
             self.end_headers()
@@ -183,17 +183,35 @@ class webhandler(http.server.BaseHTTPRequestHandler):
         pass
 
 def launchweb(port=8080):
-    with socketserver.tcpserver(("", port), webhandler) as httpd:
-        print(f"server running at http://localhost:{port}")
-        webbrowser.open(f"http://localhost:{port}")
+    # Enable address reuse so we can restart quickly
+    socketserver.TCPServer.allow_reuse_address = True
+
+    # Try the given port; if busy, try the next ones
+    for attempt in range(10):
         try:
-            httpd.serve_forever()
-        except keyboardinterrupt:
-            print("\nshutting down...")
+            with socketserver.TCPServer(("", port + attempt), webhandler) as httpd:
+                actual_port = port + attempt
+                print(f"server running at http://localhost:{actual_port}")
+                webbrowser.open(f"http://localhost:{actual_port}")
+                try:
+                    httpd.serve_forever()
+                except keyboardinterrupt:
+                    print("\nshutting down...")
+                return
+        except OSError as e:
+            if "Address already in use" in str(e):
+                continue
+            else:
+                raise
+    print(f"Could not find an available port near {port}. Try a different port with --port <number>")
+    sys.exit(1)
 
 if __name__ == "__main__":
     port = 8080
     if len(sys.argv) > 1 and sys.argv[1] == "--port":
-        try: port = int(sys.argv[2])
-        except: pass
+        try:
+            port = int(sys.argv[2])
+        except:
+            print("usage: python webui.py [--port <number>]")
+            sys.exit(1)
     launchweb(port)
