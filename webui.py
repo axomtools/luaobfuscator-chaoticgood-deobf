@@ -4,7 +4,7 @@ import json
 import webbrowser
 import urllib.parse
 import sys
-from .deobfuscate import deobfuscatechaoticgood
+import deobfuscatechaoticgood
 
 htmlpage = r"""<!DOCTYPE html>
 <html>
