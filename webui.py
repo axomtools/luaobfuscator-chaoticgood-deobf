@@ -451,7 +451,7 @@ def launchweb(port=8080):
                 webbrowser.open(f"http://localhost:{actual_port}")
                 try:
                     httpd.serve_forever()
-                except keyboardinterrupt:
+                except KeyboardInterrupt:
                     print("\nshutting down...")
                 return
         except OSError as e:
