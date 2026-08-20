@@ -229,6 +229,24 @@ def findlol(src):
                     i += 1
             if i < len(src) and src[i] == q:
                 return {'text': content, 'decrypted': content.encode('latin1')}
+    at = src.find("'LOL!")
+    if at >= 0:
+        i = at + 1
+        q = src[i-1]
+        if q == "'":
+            content = ''
+            while i < len(src) and src[i] != q:
+                if src[i] == '\\':
+                    content += src[i]
+                    i += 1
+                    if i < len(src):
+                        content += src[i]
+                        i += 1
+                else:
+                    content += src[i]
+                    i += 1
+            if i < len(src) and src[i] == q:
+                return {'text': content, 'decrypted': content.encode('latin1')}
     return None
 
 def finddispatch(src):
