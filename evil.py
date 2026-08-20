@@ -1,7 +1,7 @@
 import struct
 import re
 from decode import decodeescaped
-from foldconst import foldconst, skws, rdnum, isid, isdig, isws
+from foldconst import foldconst, skws, rdnum, isid, isdig, isws, rdnum
 from detect import matchcandidateevil
 
 class reader:
@@ -206,46 +206,119 @@ def guesssentinel(decrypted):
             bestn = n
     return best
 
+def findlol(src):
+    calls = findv7calls(src)
+    for c in calls:
+        if c['text'].startswith('LOL!'):
+            return c
+    at = src.find('"LOL!')
+    if at >= 0:
+        i = at + 1
+        q = src[i-1]
+        if q == '"':
+            content = ''
+            while i < len(src) and src[i] != q:
+                if src[i] == '\\':
+                    content += src[i]
+                    i += 1
+                    if i < len(src):
+                        content += src[i]
+                        i += 1
+                else:
+                    content += src[i]
+                    i += 1
+            if i < len(src) and src[i] == q:
+                return {'text': content, 'decrypted': content.encode('latin1')}
+    return None
+
+def finddispatch(src):
+    folded = foldconst(src)
+    import re
+    pat = re.compile(r'if\s+(v\d+)\s*<=\s*(\d+)\s+then')
+    matches = list(pat.finditer(folded))
+    if not matches:
+        return None
+    opvar = matches[0].group(1)
+    start = matches[0].start()
+    depth = 0
+    i = start
+    while i < len(folded):
+        if folded[i:i+2] == 'if':
+            depth += 1
+            i += 2
+        elif folded[i:i+3] == 'end':
+            depth -= 1
+            i += 3
+            if depth == 0:
+                end = i
+                break
+        else:
+            i += 1
+    if depth != 0:
+        return None
+    chain = folded[start:end]
+    opmap = {}
+    parts = re.split(r'\belseif\b|\belse\b', chain)
+    for part in parts:
+        part = part.strip()
+        if not part:
+            continue
+        m = re.match(r'if\s+(\w+)\s*<=\s*(\d+)\s+then\s*(.*?)\s*(?:elseif|else|end)', part, re.DOTALL)
+        if not m:
+            m = re.match(r'if\s+(\w+)\s*==\s*(\d+)\s+then\s*(.*?)\s*(?:elseif|else|end)', part, re.DOTALL)
+        if m:
+            opvar2, opnum, body = m.groups()
+            opnum = int(opnum)
+            if ' = v' in body and '[' in body:
+                if '[2]' in body:
+                    opmap[opnum] = 'GETTABLE'
+                elif '[3]' in body:
+                    opmap[opnum] = 'SETTABLE'
+                elif '[1]' in body:
+                    opmap[opnum] = 'GETUPVAL'
+            elif ' = ' in body and ' + ' in body:
+                opmap[opnum] = 'ADD'
+            elif ' = ' in body and ' - ' in body:
+                opmap[opnum] = 'SUB'
+            elif ' = ' in body and ' * ' in body:
+                opmap[opnum] = 'MUL'
+            elif ' = ' in body and ' / ' in body:
+                opmap[opnum] = 'DIV'
+            elif ' = ' in body and ' .. ' in body:
+                opmap[opnum] = 'CONCAT'
+            elif 'goto' in body:
+                opmap[opnum] = 'JMP'
+            elif 'return' in body:
+                opmap[opnum] = 'RETURN'
+            elif 'function' in body:
+                opmap[opnum] = 'CLOSURE'
+            elif '{}' in body:
+                opmap[opnum] = 'NEWTABLE'
+            elif 'call' in body.lower():
+                opmap[opnum] = 'CALL'
+            else:
+                opmap[opnum] = 'UNKNOWN'
+    return opmap
+
 def xtrbc(source):
-    calls = findv7calls(source)
-    payloads = [c for c in calls if c['text'].startswith('LOL!')]
-    if not payloads:
-        at = source.find('"LOL!')
-        if at >= 0:
-            i = at + 1
-            q = source[i-1]
-            if q == '"':
-                content = ''
-                while i < len(source) and source[i] != q:
-                    if source[i] == '\\':
-                        content += source[i]
-                        i += 1
-                        if i < len(source):
-                            content += source[i]
-                            i += 1
-                    else:
-                        content += source[i]
-                        i += 1
-                if i < len(source) and source[i] == q:
-                    payloads.append({'text': content, 'decrypted': content.encode('latin1')})
-    if not payloads:
+    lol = findlol(source)
+    if not lol:
         raise ValueError('no lol payload')
-    payload = payloads[-1]
-    sentinel = guesssentinel(payload['decrypted'])
-    raw = decrle(payload['decrypted'], sentinel)
+    sentinel = guesssentinel(lol['decrypted'])
+    raw = decrle(lol['decrypted'], sentinel)
     r = reader(raw)
     root = despr(r)
-    return {'payload': payload, 'raw': raw, 'root': root, 'sentinel': sentinel,
+    return {'payload': lol, 'raw': raw, 'root': root, 'sentinel': sentinel,
             'bytesread': r.pos, 'bytestotal': len(raw)}
 
-def reconstruct_lua(root, opmap, closelocalop):
+def reconstruct_lua(root, opmap):
     lines = []
     def walk(p, name, indent):
         lines.append(f"{indent}function {name}(" + ",".join([f"r{i}" for i in range(p['params'])]) + ")")
         for ins in p['instructions']:
             if ins.get('skipped'):
                 continue
-            opname = opmap.get(ins['opcode'], {}).get('name', 'UNKNOWN')
+            opname = opmap.get(ins['opcode'], 'UNKNOWN')
             a = ins['A']
             b = ins['B']
             c = ins['C']
@@ -322,45 +395,23 @@ def deobfuscatechaoticevil(code):
         return None
     try:
         bc = xtrbc(code)
-    except:
+    except Exception as e:
         return None
     root = bc['root']
-    opmap = {
-        0: {'name': 'MOVE'},
-        1: {'name': 'LOADK'},
-        2: {'name': 'LOADBOOL'},
-        3: {'name': 'LOADNIL'},
-        4: {'name': 'GETUPVAL'},
-        5: {'name': 'GETGLOBAL'},
-        6: {'name': 'GETTABLE'},
-        7: {'name': 'SETGLOBAL'},
-        8: {'name': 'SETUPVAL'},
-        9: {'name': 'SETTABLE'},
-        10: {'name': 'NEWTABLE'},
-        11: {'name': 'SELF'},
-        12: {'name': 'ADD'},
-        13: {'name': 'SUB'},
-        14: {'name': 'MUL'},
-        15: {'name': 'DIV'},
-        16: {'name': 'MOD'},
-        17: {'name': 'POW'},
-        18: {'name': 'UNM'},
-        19: {'name': 'NOT'},
-        20: {'name': 'LEN'},
-        21: {'name': 'CONCAT'},
-        22: {'name': 'JMP'},
-        23: {'name': 'EQ'},
-        24: {'name': 'LT'},
-        25: {'name': 'LE'},
-        26: {'name': 'TEST'},
-        27: {'name': 'CALL'},
-        28: {'name': 'TAILCALL'},
-        29: {'name': 'RETURN'},
-        30: {'name': 'CLOSURE'},
-        31: {'name': 'SETLIST'},
-    }
+    opmap = finddispatch(code)
+    if not opmap:
+        opmap = {
+            0: 'MOVE', 1: 'LOADK', 2: 'LOADBOOL', 3: 'LOADNIL',
+            4: 'GETUPVAL', 5: 'GETGLOBAL', 6: 'GETTABLE', 7: 'SETGLOBAL',
+            8: 'SETUPVAL', 9: 'SETTABLE', 10: 'NEWTABLE', 11: 'SELF',
+            12: 'ADD', 13: 'SUB', 14: 'MUL', 15: 'DIV', 16: 'MOD',
+            17: 'POW', 18: 'UNM', 19: 'NOT', 20: 'LEN', 21: 'CONCAT',
+            22: 'JMP', 23: 'EQ', 24: 'LT', 25: 'LE', 26: 'TEST',
+            27: 'CALL', 28: 'TAILCALL', 29: 'RETURN', 30: 'CLOSURE',
+            31: 'SETLIST'
+        }
     payload = findpayload(root)
-    lua = reconstruct_lua(payload, opmap, None)
+    lua = reconstruct_lua(payload, opmap)
     lua = foldconst(lua)
     lua = '\n'.join(line.rstrip() for line in lua.splitlines() if line.strip())
     header = """--[[
