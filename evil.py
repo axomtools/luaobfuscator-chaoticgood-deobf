@@ -430,7 +430,10 @@ def deobfuscatechaoticevil(code):
             31: 'SETLIST'
         }
     payload = findpayload(root)
-    lua = reconstruct_lua(payload, opmap)
+    try:
+        lua = reconstruct_lua(payload, opmap)
+    except Exception as e:
+        return None
     lua = foldconst(lua)
     lua = '\n'.join(line.rstrip() for line in lua.splitlines() if line.strip())
     header = """--[[
