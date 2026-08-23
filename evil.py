@@ -248,11 +248,12 @@ def findlol(src):
     return None
 
 def finddispatch(src):
-    folded = foldconst(src)
-    pat = re.compile(r'if\s+(v\d+)\s*<=\s*(\d+)\s+then')
-    matches = list(pat.finditer(folded))
-    if not matches:
-        return None
+    try:
+        folded = foldconst(src)
+        if not folded or not isinstance(folded, str):
+            return None
+    except:
+        return None 
     opvar = matches[0].group(1)
     start = matches[0].start()
     depth = 0
