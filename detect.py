@@ -15,8 +15,10 @@ def matchcandidateevil(content):
     return False
 
 def matchcandidateold(content):
-    if re.search(r'local\s+function\s+v\d+\s*\(', content) and re.search(r'bxor', content) and re.search(r'loadstring', content):
+    if re.search(r'local\s+v0\s*=\s*tonumber', content) and re.search(r'local\s+function\s+v15\s*\(', content):
         return True
-    if re.search(r'local\s+v\d+\s*=\s*function\s*\(', content) and re.search(r'bxor', content) and re.search(r'loadstring', content):
+    if re.search(r'local\s+function\s+v0\s*\(', content) and re.search(r'bxor', content) and re.search(r'loadstring', content):
+        return True
+    if re.search(r'local\s+v0\s*=\s*string\.char', content) and re.search(r'loadstring', content):
         return True
     return False
