@@ -21,10 +21,19 @@ def rdnum(s, i):
     if not (isdig(s[i]) or (s[i] == '.' and i+1 < len(s) and isdig(s[i+1]))):
         return None
     j = i
+    dot_count = 0
     while j < len(s) and (isdig(s[j]) or s[j] == '.'):
+        if s[j] == '.':
+            dot_count += 1
+            if dot_count > 1:
+                return None
         j += 1
     val = s[i:j]
-    return {'value': val, 'end': j, 'num': float(val) if '.' in val else int(val)}
+    try:
+        num = float(val) if '.' in val else int(val)
+    except ValueError:
+        return None
+    return {'value': val, 'end': j, 'num': num}
 
 def skstr(s, i):
     q = s[i]
