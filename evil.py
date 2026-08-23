@@ -211,6 +211,10 @@ def findlol(src):
     for c in calls:
         if c['text'].startswith('LOL!'):
             return c
+    pat = re.compile(r'v\d+\s*\(\s*(["\'])(LOL!.*?)\1')
+    m = pat.search(src)
+    if m:
+        return {'text': m.group(2), 'decrypted': m.group(2).encode('latin1')}
     at = src.find('"LOL!')
     if at >= 0:
         i = at + 1
@@ -251,7 +255,6 @@ def findlol(src):
 
 def finddispatch(src):
     folded = foldconst(src)
-    import re
     pat = re.compile(r'if\s+(v\d+)\s*<=\s*(\d+)\s+then')
     matches = list(pat.finditer(folded))
     if not matches:
