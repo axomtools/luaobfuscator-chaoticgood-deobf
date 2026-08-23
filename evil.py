@@ -253,7 +253,11 @@ def finddispatch(src):
         if not folded or not isinstance(folded, str):
             return None
     except:
-        return None 
+        return None
+    pat = re.compile(r'if\s+(v\d+)\s*<=\s*(\d+)\s+then')
+    matches = list(pat.finditer(folded))
+    if not matches:
+        return None
     opvar = matches[0].group(1)
     start = matches[0].start()
     depth = 0
