@@ -52,6 +52,24 @@ def evalex(expr):
     except:
         return None
 
+def safe_op(op, a, b):
+    try:
+        if op == '+': return a + b
+        if op == '-': return a - b
+        if op == '*': return a * b
+        if op == '/': 
+            if b == 0: return None
+            return a / b
+        if op == '%': 
+            if b == 0: return None
+            return a % b
+        if op == '^': 
+            if a == 0 and b <= 0: return None
+            return a ** b
+    except:
+        return None
+    return None
+
 def foldpar(s):
     out = ''
     i = 0
@@ -135,13 +153,7 @@ def foldbin(s):
                 j = skws(s, j + 1)
                 right = rdnum(s, j)
                 if right and (right['end'] >= len(s) or not isid(s[right['end']])):
-                    v = None
-                    if op == '+': v = left['num'] + right['num']
-                    elif op == '-': v = left['num'] - right['num']
-                    elif op == '*': v = left['num'] * right['num']
-                    elif op == '/': v = left['num'] / right['num']
-                    elif op == '%': v = left['num'] % right['num']
-                    elif op == '^': v = left['num'] ** right['num']
+                    v = safe_op(op, left['num'], right['num'])
                     if v is not None:
                         out += str(v) if isinstance(v, int) else format(v, '.12g')
                         i = right['end']
