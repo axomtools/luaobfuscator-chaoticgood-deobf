@@ -64,7 +64,7 @@ textarea::placeholder { color: var(--input-placeholder); }
 .theme-selector { position: fixed; top: 20px; right: 20px; z-index: 1000; }
 .theme-selector select { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-card); border-radius: 8px; padding: 8px 16px; font-size: 14px; cursor: pointer; }
 .theme-selector select option { background: var(--bg-card); color: var(--text-primary); }
-.status { color: var(--status-text); }
+.status { color: var(--status-text) !important; }
 </style>
 </head>
 <body>
@@ -377,7 +377,7 @@ statusDiv.textContent = '✅ Deobfuscation complete.';
 }
 })
 .catch(err => {
-outputBox.value = 'Error: ' + err;
+outputBox.value = 'Error: ' + err.message;
 statusDiv.textContent = '❌ Server error.';
 })
 .finally(() => { deobfBtn.disabled = false; });
@@ -428,11 +428,14 @@ class webhandler(http.server.BaseHTTPRequestHandler):
         except:
             self.send_error(400, "invalid json")
             return
-        result = deobfuscatechaotic(code)
-        if result is None:
-            response = {"error": "not chaotic good or evil or old obfuscation or deobfuscation failed"}
-        else:
-            response = {"result": result}
+        try:
+            result = deobfuscatechaotic(code)
+            if result is None:
+                response = {"error": "not chaotic good or evil or old obfuscation or deobfuscation failed"}
+            else:
+                response = {"result": result}
+        except Exception as e:
+            response = {"error": str(e)}
         self.send_response(200)
         self.send_header("content-type", "application/json")
         self.end_headers()
