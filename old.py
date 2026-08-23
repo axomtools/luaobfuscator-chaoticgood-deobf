@@ -4,10 +4,24 @@ from clean import cleanlua
 from extract import extractloadstring
 from detect import matchcandidateold
 
+def findxorfunc(code):
+    pat = re.compile(r'local\s+function\s+(v\d+)\s*\([^)]*\)\s*.*?bxor.*?end', re.DOTALL)
+    m = pat.search(code)
+    if m:
+        return m.group(1)
+    pat2 = re.compile(r'local\s+(v\d+)\s*=\s*function\s*\([^)]*\)\s*.*?bxor.*?end', re.DOTALL)
+    m2 = pat2.search(code)
+    if m2:
+        return m2.group(1)
+    return None
+
 def deobfuscateold(code):
     if not matchcandidateold(code):
         return None
-    decoded = _deobfuscate_old(code)
+    funcname = findxorfunc(code)
+    if not funcname:
+        return None
+    decoded = _deobfuscate_old(code, funcname)
     if not decoded:
         return None
     payload = extractloadstring(decoded)
@@ -15,8 +29,8 @@ def deobfuscateold(code):
         return cleanlua(payload)
     return cleanlua(decoded)
 
-def _deobfuscate_old(content):
-    pat = re.compile(r'v0\s*\(\s*"((?:\\.|[^"])*)"\s*,\s*"((?:\\.|[^"])*)"\s*\)')
+def _deobfuscate_old(content, funcname):
+    pat = re.compile(r'{}\s*\(\s*"((?:\\.|[^"])*)"\s*,\s*"((?:\\.|[^"])*)"\s*\)'.format(re.escape(funcname)))
     matches = list(pat.finditer(content))
     if not matches:
         return None
@@ -36,8 +50,8 @@ def _deobfuscate_old(content):
     for src, dst in reps.items():
         out = out.replace(src, dst)
     out = out.strip()
-    out = re.sub(r'\blocal\s+v0\s*=\s*string\.(?:char|byte|sub)\s*;?', "", out)
-    out = re.sub(r'\blocal\s+v0\s*=\s*bit\.bxor\s*;?', "", out)
-    out = re.sub(r'\blocal\s+function\s+v0\s*\([^)]*\).*?end\s*', "", out, flags=re.DOTALL)
+    out = re.sub(r'\blocal\s+{}\s*=\s*string\.(?:char|byte|sub)\s*;?'.format(re.escape(funcname)), "", out)
+    out = re.sub(r'\blocal\s+{}\s*=\s*bit\.bxor\s*;?'.format(re.escape(funcname)), "", out)
+    out = re.sub(r'\blocal\s+function\s+{}\s*\([^)]*\).*?end\s*'.format(re.escape(funcname)), "", out, flags=re.DOTALL)
     out = re.sub(r'\n{3,}', "\n\n", out).strip()
     return out if out else None
