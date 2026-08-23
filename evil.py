@@ -97,30 +97,43 @@ def despr(r):
     return {'params': params, 'constants': constants, 'instructions': instructions, 'prototypes': prototypes}
 
 def decrle(decrypted, sentinel=0x4f):
-    buf = decrypted if isinstance(decrypted, bytes) else decrypted.encode('latin1')
-    if buf[:4].decode('latin1') != 'LOL!':
-        raise ValueError('not lol')
-    s = buf[4:].decode('latin1')
-    out = []
-    i = 0
-    rep = None
-    while i + 1 < len(s):
-        a = ord(s[i])
-        b = ord(s[i+1])
-        i += 2
-        if b == sentinel:
-            rep = int(chr(a), 10)
-            if rep is None:
-                raise ValueError('rle')
-            continue
-        byte = int(chr(a) + chr(b), 16)
-        if rep is not None:
-            for _ in range(rep):
+    try:
+        buf = decrypted if isinstance(decrypted, bytes) else decrypted.encode('latin1')
+        if buf[:4].decode('latin1') != 'LOL!':
+            raise ValueError('not lol')
+        s = buf[4:].decode('latin1')
+        out = []
+        i = 0
+        rep = None
+        while i + 1 < len(s):
+            a = ord(s[i])
+            b = ord(s[i+1])
+            i += 2
+            if b == sentinel:
+                rep = int(chr(a), 10)
+                if rep is None:
+                    raise ValueError('rle')
+                continue
+            byte = int(chr(a) + chr(b), 16)
+            if rep is not None:
+                for _ in range(rep):
+                    out.append(byte)
+                rep = None
+            else:
                 out.append(byte)
-            rep = None
-        else:
-            out.append(byte)
-    return bytes(out)
+        return bytes(out)
+    except:
+        raise
+
+def try_decrle(decrypted, sentinels=[0x4f, 0x51, 0x40, 0x21, 0x23, 0x5a]):
+    last_err = None
+    for s in sentinels:
+        try:
+            return decrle(decrypted, s)
+        except Exception as e:
+            last_err = e
+            continue
+    raise last_err or ValueError('no sentinel works')
 
 def findv7calls(src):
     results = []
@@ -186,25 +199,6 @@ def findv7calls(src):
         except:
             from_ = at + len(tag)
     return results
-
-def guesssentinel(decrypted):
-    buf = decrypted if isinstance(decrypted, bytes) else decrypted.encode('latin1')
-    s = buf[4:]
-    votes = {}
-    for i in range(0, min(len(s)-1, 200), 2):
-        if i+1 < len(s):
-            a = s[i]
-            b = s[i+1]
-            if not ((48 <= a <= 57) or (65 <= a <= 70) or (97 <= a <= 102)):
-                if 48 <= a <= 57:
-                    votes[b] = votes.get(b, 0) + 1
-    best = 0x4f
-    bestn = 0
-    for b, n in votes.items():
-        if n > bestn:
-            best = b
-            bestn = n
-    return best
 
 def findlol(src):
     calls = findv7calls(src)
@@ -325,11 +319,10 @@ def xtrbc(source):
     lol = findlol(source)
     if not lol:
         raise ValueError('no lol payload')
-    sentinel = guesssentinel(lol['decrypted'])
-    raw = decrle(lol['decrypted'], sentinel)
+    raw = try_decrle(lol['decrypted'])
     r = reader(raw)
     root = despr(r)
-    return {'payload': lol, 'raw': raw, 'root': root, 'sentinel': sentinel,
+    return {'payload': lol, 'raw': raw, 'root': root, 'sentinel': None,
             'bytesread': r.pos, 'bytestotal': len(raw)}
 
 def reconstruct_lua(root, opmap):
