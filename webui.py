@@ -65,6 +65,7 @@ textarea::placeholder { color: var(--input-placeholder); }
 .theme-selector select { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-card); border-radius: 8px; padding: 8px 16px; font-size: 14px; cursor: pointer; }
 .theme-selector select option { background: var(--bg-card); color: var(--text-primary); }
 .status { color: var(--status-text) !important; }
+.option-check { color: var(--text-primary); margin-right: 15px; }
 </style>
 </head>
 <body>
@@ -120,8 +121,14 @@ Click to select a .lua file<br>
 <div class="card-header fw-bold">Output</div>
 <div class="card-body">
 <textarea id="outputcode" class="form-control output-area" readonly placeholder="deobfuscated code will appear here" style="font-family: 'Courier New', monospace;"></textarea>
-<div class="d-flex gap-2 mt-3">
+<div class="d-flex flex-wrap gap-3 mt-3 align-items-center">
+<div class="d-flex gap-3">
+<label class="option-check"><input type="checkbox" id="cbbeautify"> Beautify</label>
+<label class="option-check"><input type="checkbox" id="cbremovedead"> Remove Dead Loops</label>
+</div>
 <button id="deobfbtn" class="btn btn-deobfuscate flex-grow-1">🎣 Deobfuscate</button>
+</div>
+<div class="d-flex gap-2 mt-2">
 <button id="copybtn" class="btn btn-outline-secondary">📋 Copy</button>
 <button id="downloadbtn" class="btn btn-outline-success">⬇ Download</button>
 </div>
@@ -333,6 +340,8 @@ const downloadBtn = document.getElementById('downloadbtn');
 const statusDiv = document.getElementById('status');
 const fileInput = document.getElementById('fileinput');
 const dropzone = document.getElementById('dropzone');
+const cbbeautify = document.getElementById('cbbeautify');
+const cbremovedead = document.getElementById('cbremovedead');
 
 fileInput.addEventListener('change', function(e) {
 if (this.files.length) {
@@ -364,7 +373,11 @@ deobfBtn.disabled = true;
 fetch('/deobfuscate', {
 method: 'POST',
 headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ code: code })
+body: JSON.stringify({
+code: code,
+beautify: cbbeautify.checked,
+removedead: cbremovedead.checked
+})
 })
 .then(res => res.json())
 .then(data => {
@@ -425,11 +438,13 @@ class webhandler(http.server.BaseHTTPRequestHandler):
         try:
             data = json.loads(body)
             code = data.get("code", "")
+            beautify = data.get("beautify", False)
+            removedead = data.get("removedead", False)
         except:
             self.send_error(400, "invalid json")
             return
         try:
-            result = deobfuscatechaotic(code)
+            result = deobfuscatechaotic(code, beautify, removedead)
             if result is None:
                 response = {"error": "not chaotic good or evil or old obfuscation or deobfuscation failed"}
             else:
