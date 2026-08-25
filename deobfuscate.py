@@ -6,18 +6,90 @@ from detect import matchcandidate, matchcandidateevil, matchcandidateold
 from evil import deobfuscatechaoticevil
 from old import deobfuscateold
 
-def deobfuscatechaoticgood(code):
-    if not matchcandidate(code):
+def deobfuscatechaoticgood(code, beautify=False, removedead=False):
+    if not code or not isinstance(code, str):
         return None
-    decoded = _deobfuscate(code)
+    if not re.search(r'v7\s*\(\s*"', code) and not re.search(r'local\s+function\s+\w+\s*\(\s*\w+\s*\)\s*return\s+\w+\[\s*\w+\s*[-+]\s*\(\s*\d+\s*[-+]\s*\d+\s*\)\s*\]\s*end', code):
+        return None
+    decoded = deobfuscatehelper(code)
     if not decoded:
         return None
+    if removedead:
+        decoded = removedeadloops(decoded)
     payload = extractloadstring(decoded)
     if payload:
-        return cleanlua(payload)
-    return cleanlua(decoded)
+        result = cleanlua(payload)
+    else:
+        result = cleanlua(decoded)
+    if beautify:
+        result = beautifylua(result)
+    return result
 
-def _deobfuscate(content):
+def removedeadloops(code):
+    lines = code.splitlines()
+    newlines = []
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if re.match(r'^for\s+\w+\s*=\s*0,\s*255\s+do\s*$', line, re.IGNORECASE):
+            depth = 1
+            j = i + 1
+            while j < len(lines) and depth > 0:
+                l = lines[j].strip()
+                if re.match(r'^for\s+', l, re.IGNORECASE) or re.match(r'^while\s+', l, re.IGNORECASE) or re.match(r'^if\s+', l, re.IGNORECASE) or re.match(r'^function\s+', l, re.IGNORECASE):
+                    depth += 1
+                elif re.match(r'^end\s*$', l, re.IGNORECASE):
+                    depth -= 1
+                j += 1
+            i = j
+            continue
+        if re.match(r'^while\s+true\s+do\s*$', line, re.IGNORECASE):
+            depth = 1
+            j = i + 1
+            blocklines = [line]
+            while j < len(lines) and depth > 0:
+                blocklines.append(lines[j])
+                l = lines[j].strip()
+                if re.match(r'^while\s+true\s+do\s*$', l, re.IGNORECASE) or re.match(r'^if\s+', l, re.IGNORECASE) or re.match(r'^for\s+', l, re.IGNORECASE) or re.match(r'^function\s+', l, re.IGNORECASE):
+                    depth += 1
+                elif re.match(r'^end\s*$', l, re.IGNORECASE):
+                    depth -= 1
+                j += 1
+            blocktext = '\n'.join(blocklines)
+            if re.search(r'\b(loadstring|HttpGet|Instance\.new|game\.|workspace\.|print\()', blocktext):
+                newlines.extend(blocklines)
+            i = j
+            continue
+        newlines.append(lines[i])
+        i += 1
+    return '\n'.join(newlines)
+
+def beautifylua(code):
+    if not code:
+        return code
+    lines = code.splitlines()
+    indent = 0
+    indentsize = 4
+    result = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            result.append('')
+            continue
+        if re.match(r'^(end|until|elseif|else)\b', stripped):
+            indent = max(0, indent - 1)
+        result.append(' ' * (indent * indentsize) + stripped)
+        if re.match(r'^(function|if|for|while|repeat|do)\b', stripped):
+            indent += 1
+        if re.search(r'\bthen\s*$', stripped):
+            indent += 1
+        if stripped.endswith('{'):
+            indent += 1
+        if stripped.startswith('}'):
+            indent = max(0, indent - 1)
+    return '\n'.join(result)
+
+def deobfuscatehelper(content):
     pat = re.compile(r'v7\s*\(\s*"((?:\\.|[^"])*)"\s*,\s*"((?:\\.|[^"])*)"\s*\)')
     matches = list(pat.finditer(content))
     if not matches:
@@ -44,16 +116,16 @@ def _deobfuscate(content):
     out = re.sub(r'\blocal\s+v\d+\s*=\s*table\.(?:concat|insert)\s*;?', "", out)
     out = re.sub(r'\blocal\s+function\s+v7\s*\([^)]*\).*?end\s*', "", out, flags=re.DOTALL)
     out = re.sub(r'\n{3,}', "\n\n", out).strip()
-    print_calls = re.findall(r'\bprint\s*\([^;\n]*\)', out)
-    if print_calls:
-        return "\n".join(print_calls)
+    printcalls = re.findall(r'\bprint\s*\([^;\n]*\)', out)
+    if printcalls:
+        return "\n".join(printcalls)
     return out if out else None
 
-def deobfuscatechaotic(code):
+def deobfuscatechaotic(code, beautify=False, removedead=False):
     if matchcandidateevil(code):
         return deobfuscatechaoticevil(code)
     if matchcandidateold(code):
         return deobfuscateold(code)
     if matchcandidate(code):
-        return deobfuscatechaoticgood(code)
+        return deobfuscatechaoticgood(code, beautify, removedead)
     return None
