@@ -79,11 +79,11 @@ def despr(r):
             iskb = bitfield(kflags, 2, 2) == 1
             iskc = bitfield(kflags, 3, 3) == 1
             if iska:
-                A = constants[A]
+                A = constants[A] if A < len(constants) else None
             if iskb:
-                B = constants[B]
+                B = constants[B] if B < len(constants) else None
             if iskc:
-                C = constants[C]
+                C = constants[C] if C < len(constants) else None
             instructions.append({
                 'opcode': opcode, 'A': A, 'B': B, 'C': C, 'mode': mode,
                 'kflags': kflags, 'iska': iska, 'iskb': iskb, 'iskc': iskc,
@@ -92,8 +92,11 @@ def despr(r):
         else:
             instructions.append({'skipped': True, 'flag': flag})
     protocount = r.u32()
-    for i in range(protocount):
-        prototypes.append(despr(r))
+    for _ in range(protocount):
+        try:
+            prototypes.append(despr(r))
+        except:
+            prototypes.append(None)
     return {'params': params, 'constants': constants, 'instructions': instructions, 'prototypes': prototypes}
 
 def decrle(decrypted, sentinel=0x4f):
@@ -271,8 +274,8 @@ def hascallsoon(ins, proto):
     if not proto or '_index' not in ins:
         return False
     start = ins['_index']
-    for i in range(start+1, min(start+8, len(proto['instructions']))):
-        n = proto['instructions'][i]
+    for i in range(start+1, min(start+8, len(proto.get('instructions', [])))):
+        n = proto['instructions'][i] if i < len(proto['instructions']) else None
         if not n or n.get('skipped'):
             continue
         if (n.get('mode') == 0 or n.get('mode') is None) and n.get('A') == ins['A'] and not n.get('iskb') and not n.get('iskc'):
@@ -288,8 +291,8 @@ def feedsglobaluse(ins, proto):
     if hascallsoon(ins, proto):
         return True
     start = ins['_index']
-    for i in range(start+1, min(start+8, len(proto['instructions']))):
-        n = proto['instructions'][i]
+    for i in range(start+1, min(start+8, len(proto.get('instructions', [])))):
+        n = proto['instructions'][i] if i < len(proto['instructions']) else None
         if not n or n.get('skipped'):
             continue
         if n.get('mode') == 2:
@@ -307,8 +310,8 @@ def lkargmv(ins, proto):
     if not proto or '_index' not in ins:
         return False
     idx = ins['_index']
-    for i in range(idx+1, min(idx+4, len(proto['instructions']))):
-        n = proto['instructions'][i]
+    for i in range(idx+1, min(idx+4, len(proto.get('instructions', [])))):
+        n = proto['instructions'][i] if i < len(proto['instructions']) else None
         if not n or n.get('skipped'):
             continue
         if n.get('mode') == 2:
@@ -320,7 +323,7 @@ def lkargmv(ins, proto):
                 return False
         break
     for i in range(idx-1, max(1, idx-4)-1, -1):
-        n = proto['instructions'][i]
+        n = proto['instructions'][i] if i < len(proto['instructions']) else None
         if not n or n.get('skipped'):
             continue
         if n.get('mode') == 1 and n.get('iskb') and n['A'] == ins['A'] - 1:
@@ -334,7 +337,7 @@ def lkcall(ins, proto):
     bnum = ins['B'] if isinstance(ins.get('B'), (int, float)) else -1
     idx = ins['_index']
     for i in range(idx-1, max(1, idx-8)-1, -1):
-        n = proto['instructions'][i]
+        n = proto['instructions'][i] if i < len(proto['instructions']) else None
         if not n or n.get('skipped'):
             continue
         if n['A'] != ins['A']:
@@ -355,7 +358,7 @@ def lkcall(ins, proto):
     if bnum >= 2:
         argloads = 0
         for i in range(idx-1, max(1, idx-8)-1, -1):
-            n = proto['instructions'][i]
+            n = proto['instructions'][i] if i < len(proto['instructions']) else None
             if not n or n.get('skipped'):
                 continue
             if n.get('mode') == 2:
@@ -376,16 +379,17 @@ def lkupfollow(ins, proto, closelocalop, opmap):
         return False
     if ins['C'] <= 0 or ins['C'] > 32:
         return False
-    if not proto['prototypes'][ins['B']]:
+    pidx = int(ins['B'])
+    if pidx < 0 or pidx >= len(proto.get('prototypes', [])) or not proto['prototypes'][pidx]:
         return False
     idx = ins['_index']
     for u in range(ins['C']):
-        nxt = proto['instructions'][idx + 1 + u]
+        nxt = proto['instructions'][idx + 1 + u] if idx + 1 + u < len(proto.get('instructions', [])) else None
         if not nxt or nxt.get('skipped'):
             return False
-        if closelocalop is not None and nxt['opcode'] == closelocalop:
+        if closelocalop is not None and nxt.get('opcode') == closelocalop:
             continue
-        n = (opmap and opmap.get(nxt['opcode'], {}).get('name', '')) or ''
+        n = (opmap and opmap.get(nxt.get('opcode'), {}).get('name', '')) or ''
         if n in ('MOVE','GETUPVAL'):
             continue
         if nxt.get('mode') == 0 and not nxt.get('iskb') and not nxt.get('iskc') and isinstance(nxt.get('B'), (int, float)):
@@ -408,15 +412,16 @@ def shpguess(ins, proto, closelocalop, opmap):
     if mode == 2 and bnum:
         return {'name': 'JMP', 'conf': 95}
     if mode == 3 and bnum and cnum is not None:
-        if proto and proto['prototypes'][B] and C >= 0 and C <= 255 and not iskc and not iskb:
+        pidx = int(B) if bnum else -1
+        if pidx >= 0 and pidx < len(proto.get('prototypes', [])) and proto['prototypes'][pidx] and C >= 0 and C <= 255 and not iskc and not iskb:
             return {'name': 'CLOSURE', 'conf': 90}
         if iskc or iskb:
             return {'name': 'EQ', 'conf': 55}
         if proto and '_index' in ins:
-            nxt = proto['instructions'][ins['_index'] + 1]
+            nxt = proto['instructions'][ins['_index'] + 1] if ins['_index'] + 1 < len(proto.get('instructions', [])) else None
             if nxt and not nxt.get('skipped') and nxt.get('mode') == 2 and isinstance(nxt.get('B'), (int, float)):
                 return {'name': 'EQ', 'conf': 75}
-        if B > 0 and proto and B < len(proto['instructions']) and C == 0:
+        if bnum and B > 0 and proto and B < len(proto.get('instructions', [])) and C == 0:
             return {'name': 'JMP', 'conf': 55}
         return {'name': 'EQ', 'conf': 50}
     if mode == 1 and iskb and C is None:
@@ -534,7 +539,7 @@ def prefnm(mapname, ins, proto, closelocalop, opmap):
     if ins.get('mode') == 3 and isinstance(ins.get('B'), (int, float)):
         pidx = ins['B']
         nups = ins['C'] if isinstance(ins.get('C'), (int, float)) else 0
-        if proto and proto['prototypes'][pidx] and 0 <= nups <= 32 and not ins.get('iskb') and not ins.get('iskc'):
+        if pidx >= 0 and pidx < len(proto.get('prototypes', [])) and proto['prototypes'][pidx] and 0 <= nups <= 32 and not ins.get('iskb') and not ins.get('iskc'):
             name = 'CLOSURE'
         elif iscmpop(mapname) or iscmpop(name):
             name = mapname if iscmpop(mapname) else name
@@ -586,7 +591,7 @@ def prefnm(mapname, ins, proto, closelocalop, opmap):
     if name == 'CLOSURE':
         nups = ins['C'] if isinstance(ins.get('C'), (int, float)) else 0
         pidx = ins['B'] if isinstance(ins.get('B'), (int, float)) else -1
-        if nups < 0 or nups > 32 or not proto or not proto['prototypes'][pidx]:
+        if nups < 0 or nups > 32 or not proto or pidx < 0 or pidx >= len(proto.get('prototypes', [])) or not proto['prototypes'][pidx]:
             if ins.get('mode') == 3 and isinstance(ins.get('B'), (int, float)):
                 name = 'JMP'
             elif ins.get('mode') == 0 and not ins.get('iskb') and not ins.get('iskc') and isinstance(ins.get('B'), (int, float)) and ins['B'] <= 255 and (ins.get('C') == 0 or ins.get('C') is None):
@@ -624,7 +629,7 @@ def prefnm(mapname, ins, proto, closelocalop, opmap):
 def refopmap(root, opmap):
     votes = {}
     def walk(p):
-        for i in range(1, len(p['instructions'])):
+        for i in range(1, len(p.get('instructions', []))):
             ins = p['instructions'][i]
             if not ins or ins.get('skipped'):
                 continue
@@ -660,7 +665,7 @@ def refopmap(root, opmap):
     return opmap
 
 def rdvar(s, i):
-    if s[i] != 'v' or not isdig(s[i+1] if i+1 < len(s) else ''):
+    if i >= len(s) or s[i] != 'v' or not isdig(s[i+1] if i+1 < len(s) else ''):
         return None
     j = i + 1
     while j < len(s) and isdig(s[j]):
@@ -1753,7 +1758,7 @@ def stripredjmp(ops):
         if op.get('name') != 'JMP' or not isinstance(op.get('B'), (int, float)):
             out.append(op)
             continue
-        if i + 1 < len(ops) and ops[i+1]['index'] == op['B']:
+        if i + 1 < len(ops) and ops[i+1].get('index') == op['B']:
             continue
         if out and out[-1].get('name') == 'JMP' and out[-1].get('B') == op['B']:
             continue
@@ -1840,7 +1845,7 @@ def stripbogret(ops):
 def remapjmp(ops):
     if not ops:
         return ops
-    present = set(op['index'] for op in ops)
+    present = set(op.get('index') for op in ops)
     sorted_present = sorted(present)
     def resolve(b):
         if b in present:
@@ -2206,7 +2211,7 @@ def reg(n):
 
 def annpr(proto, opmap, closelocalop):
     out = []
-    instructions = proto['instructions']
+    instructions = proto.get('instructions', [])
     i = 1
     while i < len(instructions):
         ins = instructions[i]
@@ -2225,7 +2230,7 @@ def annpr(proto, opmap, closelocalop):
             sawtable = False
             loads = 0
             for j in range(i-1, max(1, i-12)-1, -1):
-                p = instructions[j]
+                p = instructions[j] if j < len(instructions) else None
                 if not p or p.get('skipped'):
                     continue
                 pn = prefnm(opmap.get(p['opcode'], {}).get('name', 'UNKNOWN'), p, proto, closelocalop, opmap)
@@ -2243,15 +2248,15 @@ def annpr(proto, opmap, closelocalop):
             name = 'CALL'
         if name == 'SELF' and isinstance(ins.get('C'), (int, float)) and ins['C'] > 0 and isinstance(ins.get('B'), (int, float)):
             protoidx = ins['B']
-            if proto['prototypes'][protoidx]:
+            if protoidx >= 0 and protoidx < len(proto.get('prototypes', [])) and proto['prototypes'][protoidx]:
                 looksup = True
                 for u in range(ins['C']):
-                    nxt = instructions[i + 1 + u]
+                    nxt = instructions[i + 1 + u] if i + 1 + u < len(instructions) else None
                     if not nxt or nxt.get('skipped'):
                         looksup = False
                         break
                     n = opmap.get(nxt['opcode'], {}).get('name', '')
-                    if closelocalop is not None and nxt['opcode'] == closelocalop:
+                    if closelocalop is not None and nxt.get('opcode') == closelocalop:
                         continue
                     if n in ('MOVE','GETUPVAL'):
                         continue
@@ -2270,16 +2275,16 @@ def annpr(proto, opmap, closelocalop):
         if name == 'CLOSURE':
             nups = ins['C'] if isinstance(ins.get('C'), (int, float)) else 0
             pidx = ins['B'] if isinstance(ins.get('B'), (int, float)) else -1
-            if nups < 0 or nups > 32 or not proto['prototypes'][pidx]:
+            if nups < 0 or nups > 32 or not proto or pidx < 0 or pidx >= len(proto.get('prototypes', [])) or not proto['prototypes'][pidx]:
                 name = 'UNKNOWN'
             else:
                 upvals = []
                 for u in range(nups):
-                    nxt = instructions[i + 1 + u]
+                    nxt = instructions[i + 1 + u] if i + 1 + u < len(instructions) else None
                     if not nxt or nxt.get('skipped'):
                         continue
-                    islocal = (closelocalop is not None and nxt['opcode'] == closelocalop) or (opmap.get(nxt['opcode'], {}).get('name') == 'MOVE')
-                    upvals.append({'islocal': bool(islocal), 'idx': nxt['B']})
+                    islocal = (closelocalop is not None and nxt.get('opcode') == closelocalop) or (opmap.get(nxt.get('opcode'), {}).get('name') == 'MOVE')
+                    upvals.append({'islocal': bool(islocal), 'idx': nxt.get('B')})
                 out.append({
                     'index': i,
                     'opcode': ins['opcode'],
@@ -2410,7 +2415,7 @@ def liftpr(proto, opmap, closelocalop, protoname='main', indent=0):
     annotated = annpr(proto, opmap, closelocalop)
     params = [reg(p) for p in range(proto['params'])]
     lines.append(f'{sp}function {protoname}({", ".join(params)})')
-    for pi, child in enumerate(proto['prototypes']):
+    for pi, child in enumerate(proto.get('prototypes', [])):
         if child:
             lines.append(liftpr(child, opmap, closelocalop, f'{protoname}_f{pi}', indent+1))
     labels = set()
@@ -2431,14 +2436,14 @@ def disasmpr(proto, opmap, closelocalop, name='main', indent=0):
     sp = '  ' * indent
     lines = []
     lines.append(f'{sp}.proto {name} params={proto["params"]}')
-    consts = [f'{i}={fmtk(c)}' for i, c in enumerate(proto['constants']) if i > 0 and c is not None]
+    consts = [f'{i}={fmtk(c)}' for i, c in enumerate(proto.get('constants', [])) if i > 0 and c is not None]
     if consts:
         lines.append(f'{sp}.constants {", ".join(consts)}')
     annotated = annpr(proto, opmap, closelocalop)
     for ins in annotated:
         extra = f' upvals={json.dumps(ins["upvals"])}' if 'upvals' in ins else ''
         lines.append(f'{sp}[{str(ins["index"]).rjust(3)}] {ins["name"].ljust(10)} A={json.dumps(ins["A"])} B={json.dumps(ins["B"])} C={json.dumps(ins["C"])}{extra}')
-    for pi, child in enumerate(proto['prototypes']):
+    for pi, child in enumerate(proto.get('prototypes', [])):
         if child:
             lines.append(disasmpr(child, opmap, closelocalop, f'{name}_f{pi}', indent+1))
     return '\n'.join(lines)
@@ -2572,7 +2577,7 @@ def tidy(lines):
             dead = True
             continue
         if t == 'return' or t.startswith('return '):
-            out.push(line)
+            out.append(line)
             dead = True
             continue
         out.append(line)
@@ -3072,12 +3077,15 @@ def emitsl(ops, from_, to, regs, defined, depth, upvals, childnames, closurebind
     idx = byidx(ops)
     i = from_
     while i < to:
-        op = ops[i]
+        op = ops[i] if i < len(ops) else None
+        if not op:
+            i += 1
+            continue
         if op['index'] in targets:
             lines.append('  ' * depth + f'::L{op["index"]}::')
         asFor = trynumfor(ops, i, idx, targets, regs, defined, depth, upvals, childnames, closurebinds)
         if asFor and asFor['next'] > i:
-            loopAtBoundary = asFor['next'] == to + 1 and ops[to] and ops[to]['name'] == 'FORLOOP'
+            loopAtBoundary = asFor['next'] == to + 1 and ops[to] and ops[to]['name'] == 'FORLOOP' if to < len(ops) else False
             if asFor['next'] <= to or loopAtBoundary:
                 lines.extend(asFor['lines'])
                 i = to if loopAtBoundary else asFor['next']
@@ -3125,7 +3133,7 @@ def step(op, ops, i, regs, defined, depth, upvals, childnames, closurebinds):
         if op['name'] == 'LOADK' and isinstance(B, str) and isid1(B):
             if isgname(B):
                 for j in range(i+1, min(i+8, len(ops))):
-                    n = ops[j]
+                    n = ops[j] if j < len(ops) else None
                     if not n:
                         break
                     if n['name'] == 'CALL' and n['A'] == A:
@@ -3150,7 +3158,7 @@ def step(op, ops, i, regs, defined, depth, upvals, childnames, closurebinds):
         if isinstance(B, str) and not isgname(B):
             asfn = False
             for j in range(i+1, min(i+5, len(ops))):
-                n = ops[j]
+                n = ops[j] if j < len(ops) else None
                 if not n:
                     break
                 if n['name'] == 'CALL' and n['A'] == A:
@@ -3200,7 +3208,9 @@ def step(op, ops, i, regs, defined, depth, upvals, childnames, closurebinds):
     if op['name'] == 'SELF':
         j = i + 1
         while j < len(ops) and j <= i + 8:
-            n = ops[j]
+            n = ops[j] if j < len(ops) else None
+            if not n:
+                break
             if n['name'] == 'CALL' and n['A'] == A:
                 break
             if n['name'] in ('LOADK','LOADBOOL','MOVE','GETGLOBAL','GETTABLE','GETUPVAL') and n['A'] != A:
@@ -3432,7 +3442,7 @@ def reconpr(proto, opmap, closelocalop, fname, upvals, depth):
         regs[p] = reg(p)
         defined.add(p)
     childnames = {}
-    for i, child in enumerate(proto['prototypes']):
+    for i, child in enumerate(proto.get('prototypes', [])):
         if child:
             childnames[i] = f'{fname}_f{i}'
     closurebinds = []
@@ -3466,10 +3476,10 @@ def reconpr(proto, opmap, closelocalop, fname, upvals, depth):
     body = finlines(tidy(foldln(lines)))
     bodytext = '\n'.join(body)
     nested = []
-    for pi, child in enumerate(proto['prototypes']):
+    for pi, child in enumerate(proto.get('prototypes', [])):
         if not child:
             continue
-        cname = childnames[pi]
+        cname = childnames.get(pi, f'f{pi}')
         childops = cleancfg(annpr(child, opmap, closelocalop))
         childusage = anpruse(child, childops)
         if childusage.get('xorStub') and not childusage.get('interesting'):
@@ -3512,7 +3522,7 @@ def reconpr(proto, opmap, closelocalop, fname, upvals, depth):
             j = 1
             while j < len(t) and t[j].isdigit():
                 j += 1
-            if t[j:j+3] == ' = ':
+            if j < len(t) and t[j:j+3] == ' = ':
                 plain = t[j+3:]
         if plain is not None and '(' not in plain and isplnline(plain):
             early.append(line)
@@ -3530,16 +3540,19 @@ def reconpr(proto, opmap, closelocalop, fname, upvals, depth):
     return '\n'.join(out)
 
 def reconprog(root, opmap, closelocalop):
-    payload = findpp(root)
-    if payload and not isep(payload):
-        body = reconpr(payload, opmap, closelocalop, 'main', [], 0)
+    try:
+        payload = findpp(root)
+        if payload and not isep(payload):
+            body = reconpr(payload, opmap, closelocalop, 'main', [], 0)
+            return body + '\n\nreturn main()'
+        leaf = findil(root, opmap, closelocalop)
+        if leaf and leaf is not root:
+            body = reconpr(leaf, opmap, closelocalop, 'main', [], 0)
+            return body + '\n\nreturn main()'
+        body = reconpr(root, opmap, closelocalop, 'main', [], 0)
         return body + '\n\nreturn main()'
-    leaf = findil(root, opmap, closelocalop)
-    if leaf and leaf is not root:
-        body = reconpr(leaf, opmap, closelocalop, 'main', [], 0)
-        return body + '\n\nreturn main()'
-    body = reconpr(root, opmap, closelocalop, 'main', [], 0)
-    return body + '\n\nreturn main()'
+    except Exception:
+        return liftprog(root, opmap, closelocalop)
 
 def deobfuscatechaoticevil(code):
     if not code or not isinstance(code, str):
@@ -3549,8 +3562,11 @@ def deobfuscatechaoticevil(code):
     except Exception:
         return None
     root = bc['root']
-    vminfo = anvm(code)
-    opmap = vminfo['opcodeMap']
+    try:
+        vminfo = anvm(code)
+    except Exception:
+        vminfo = {'opcodeMap': {}, 'closureLocalOp': None}
+    opmap = vminfo.get('opcodeMap', {})
     if not opmap:
         opmap = {
             0: {'name': 'MOVE'}, 1: {'name': 'LOADK'}, 2: {'name': 'LOADBOOL'},
@@ -3570,7 +3586,7 @@ def deobfuscatechaoticevil(code):
     try:
         lua = reconprog(root, opmap, closelocalop)
     except Exception:
-        return None
+        lua = liftprog(root, opmap, closelocalop)
     header = """--[[
 Deobfuscated by Axomic LuaObfuscator ChaoticEvil Deobfuscator
 Our Discord : https://discord.gg/Sps39CydcZ
