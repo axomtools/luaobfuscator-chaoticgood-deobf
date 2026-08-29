@@ -1,5 +1,8 @@
 import re
-from rename import renameids
+try:
+    from .rename import renameids
+except ImportError:
+    from rename import renameids
 
 CREDIT = """--[[
 Deobfuscated by Axomic LuaObfuscator ChaoticGood Deobfuscator
