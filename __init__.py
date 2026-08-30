@@ -1,13 +1,2 @@
-from .deobfuscate import (
-    deobfuscatechaotic,
-    deobfuscatechaoticgood,
-)
-
+import deobfuscatechaoticgood
 from .webui import launchweb
-
-
-__all__ = [
-    "deobfuscatechaotic",
-    "deobfuscatechaoticgood",
-    "launchweb",
-]
