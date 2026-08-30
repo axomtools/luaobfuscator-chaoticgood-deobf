@@ -65,7 +65,6 @@ textarea::placeholder { color: var(--input-placeholder); }
 .theme-selector select { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-card); border-radius: 8px; padding: 8px 16px; font-size: 14px; cursor: pointer; }
 .theme-selector select option { background: var(--bg-card); color: var(--text-primary); }
 .status { color: var(--status-text) !important; }
-.option-check { color: var(--text-primary); margin-right: 15px; }
 </style>
 </head>
 <body>
@@ -123,8 +122,8 @@ Click to select a .lua file<br>
 <textarea id="outputcode" class="form-control output-area" readonly placeholder="deobfuscated code will appear here" style="font-family: 'Courier New', monospace;"></textarea>
 <div class="d-flex flex-wrap gap-3 mt-3 align-items-center">
 <div class="d-flex gap-3">
-<label class="option-check"><input type="checkbox" id="cbbeautify"> Beautify</label>
-<label class="option-check"><input type="checkbox" id="cbremovedead"> Remove Dead Loops</label>
+<label class="option-check"><input type="checkbox" id="cbbeautify" checked> Beautify</label>
+<label class="option-check"><input type="checkbox" id="cbremovedead" checked> Remove Dead Loops</label>
 </div>
 <button id="deobfbtn" class="btn btn-deobfuscate flex-grow-1">🎣 Deobfuscate</button>
 </div>
@@ -438,15 +437,15 @@ class webhandler(http.server.BaseHTTPRequestHandler):
         try:
             data = json.loads(body)
             code = data.get("code", "")
-            beautify = data.get("beautify", False)
-            removedead = data.get("removedead", False)
+            beautify = data.get("beautify", True)
+            removedead = data.get("removedead", True)
         except:
             self.send_error(400, "invalid json")
             return
         try:
-            result = deobfuscatechaotic(code, beautify, removedead)
+            result = deobfuscatechaotic(code)
             if result is None:
-                response = {"error": "not chaotic good or evil or old obfuscation or deobfuscation failed"}
+                response = {"error": "not chaotic good obfuscation or deobfuscation failed"}
             else:
                 response = {"result": result}
         except Exception as e:
