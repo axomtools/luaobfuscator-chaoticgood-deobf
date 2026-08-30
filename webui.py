@@ -121,10 +121,6 @@ Click to select a .lua file<br>
 <div class="card-body">
 <textarea id="outputcode" class="form-control output-area" readonly placeholder="deobfuscated code will appear here" style="font-family: 'Courier New', monospace;"></textarea>
 <div class="d-flex flex-wrap gap-3 mt-3 align-items-center">
-<div class="d-flex gap-3">
-<label class="option-check"><input type="checkbox" id="cbbeautify" checked> Beautify</label>
-<label class="option-check"><input type="checkbox" id="cbremovedead" checked> Remove Dead Loops</label>
-</div>
 <button id="deobfbtn" class="btn btn-deobfuscate flex-grow-1">🎣 Deobfuscate</button>
 </div>
 <div class="d-flex gap-2 mt-2">
@@ -339,8 +335,6 @@ const downloadBtn = document.getElementById('downloadbtn');
 const statusDiv = document.getElementById('status');
 const fileInput = document.getElementById('fileinput');
 const dropzone = document.getElementById('dropzone');
-const cbbeautify = document.getElementById('cbbeautify');
-const cbremovedead = document.getElementById('cbremovedead');
 
 fileInput.addEventListener('change', function(e) {
 if (this.files.length) {
@@ -372,11 +366,7 @@ deobfBtn.disabled = true;
 fetch('/deobfuscate', {
 method: 'POST',
 headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({
-code: code,
-beautify: cbbeautify.checked,
-removedead: cbremovedead.checked
-})
+body: JSON.stringify({ code: code })
 })
 .then(res => res.json())
 .then(data => {
@@ -437,8 +427,6 @@ class webhandler(http.server.BaseHTTPRequestHandler):
         try:
             data = json.loads(body)
             code = data.get("code", "")
-            beautify = data.get("beautify", True)
-            removedead = data.get("removedead", True)
         except:
             self.send_error(400, "invalid json")
             return
