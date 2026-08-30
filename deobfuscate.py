@@ -4,37 +4,19 @@ from clean import cleanlua
 from extract import extractloadstring
 from detect import matchcandidate
 
-def findxorfunc(code):
-    pat = re.compile(r'local\s+function\s+(\w+)\s*\([^)]*\)\s*.*?bxor.*?end', re.DOTALL)
-    m = pat.search(code)
-    if m:
-        return m.group(1)
-    pat2 = re.compile(r'local\s+(\w+)\s*=\s*function\s*\([^)]*\)\s*.*?bxor.*?end', re.DOTALL)
-    m2 = pat2.search(code)
-    if m2:
-        return m2.group(1)
-    return None
-
 def deobfuscatechaoticgood(code):
-    if not code or not isinstance(code, str):
-        return None
     if not matchcandidate(code):
         return None
-    funcname = findxorfunc(code)
-    if not funcname:
-        return None
-    decoded = _deobfuscate(code, funcname)
+    decoded = _deobfuscate(code)
     if not decoded:
         return None
     payload = extractloadstring(decoded)
     if payload:
-        result = cleanlua(payload)
-    else:
-        result = cleanlua(decoded)
-    return result
+        return cleanlua(payload)
+    return cleanlua(decoded)
 
-def _deobfuscate(content, funcname):
-    pat = re.compile(r'{}\s*\(\s*"((?:\\.|[^"])*)"\s*,\s*"((?:\\.|[^"])*)"\s*\)'.format(re.escape(funcname)))
+def _deobfuscate(content):
+    pat = re.compile(r'v7\s*\(\s*"((?:\\.|[^"])*)"\s*,\s*"((?:\\.|[^"])*)"\s*\)')
     matches = list(pat.finditer(content))
     if not matches:
         return None
@@ -54,16 +36,13 @@ def _deobfuscate(content, funcname):
     for src, dst in reps.items():
         out = out.replace(src, dst)
     out = out.strip()
-    out = re.sub(r'\blocal\s+{}\s*=\s*string\.(?:char|byte|sub)\s*;?'.format(re.escape(funcname)), "", out)
-    out = re.sub(r'\blocal\s+{}\s*=\s*bit32\s+or\s+bit\s*;?'.format(re.escape(funcname)), "", out)
-    out = re.sub(r'\blocal\s+{}\s*=\s*{}\.bxor\s*;?'.format(re.escape(funcname), re.escape(funcname)), "", out)
-    out = re.sub(r'\blocal\s+{}\s*=\s*table\.(?:concat|insert)\s*;?'.format(re.escape(funcname)), "", out)
-    out = re.sub(r'\blocal\s+function\s+{}\s*\([^)]*\).*?end\s*'.format(re.escape(funcname)), "", out, flags=re.DOTALL)
+    out = re.sub(r'\blocal\s+v\d+\s*=\s*string\.(?:char|byte|sub)\s*;?', "", out)
+    out = re.sub(r'\blocal\s+v\d+\s*=\s*bit32\s+or\s+bit\s*;?', "", out)
+    out = re.sub(r'\blocal\s+v\d+\s*=\s*v\d+\.bxor\s*;?', "", out)
+    out = re.sub(r'\blocal\s+v\d+\s*=\s*table\.(?:concat|insert)\s*;?', "", out)
+    out = re.sub(r'\blocal\s+function\s+v7\s*\([^)]*\).*?end\s*', "", out, flags=re.DOTALL)
     out = re.sub(r'\n{3,}', "\n\n", out).strip()
-    printcalls = re.findall(r'\bprint\s*\([^;\n]*\)', out)
-    if printcalls:
-        return "\n".join(printcalls)
+    print_calls = re.findall(r'\bprint\s*\([^;\n]*\)', out)
+    if print_calls:
+        return "\n".join(print_calls)
     return out if out else None
-
-def deobfuscatechaotic(code):
-    return deobfuscatechaoticgood(code)
