@@ -1,8 +1,5 @@
 import re
-try:
-    from .decode import decodeescaped
-except ImportError:
-    from decode import decodeescaped
+from decode import decodeescaped
 
 def extractloadstring(code):
     pat = re.compile(r'\b(?:loadstring|load)\s*\(\s*(["\'])((?:\\.|[^\\\'"])*?)\1\s*[,)]', re.DOTALL)
