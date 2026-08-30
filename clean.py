@@ -1,7 +1,7 @@
 import re
 from rename import renameids
 
-credit = """--[[
+CREDIT = """--[[
 Deobfuscated by Axomic LuaObfuscator ChaoticGood Deobfuscator
 Our Discord : https://discord.gg/Sps39CydcZ
 Our YouTube : https://youtube.com/@axos0022
@@ -33,4 +33,4 @@ def stripheader(code):
 def cleanlua(code):
     code = renameids(code.strip())
     code = stripheader(code)
-    return (credit + "\n" + code).strip()
+    return (CREDIT + "\n" + code).strip()
