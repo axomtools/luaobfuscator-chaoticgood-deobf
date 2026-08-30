@@ -2,27 +2,23 @@ import re
 from decode import decodeescaped, lualiteral
 from clean import cleanlua
 from extract import extractloadstring
-from detect import matchcandidate, matchcandidateevil, matchcandidateold
-from evil import deobfuscatechaoticevil
-from old import deobfuscateold
+from detect import matchcandidate
 
-def deobfuscatechaoticgood(code, beautify=False, removedead=False):
+def deobfuscatechaoticgood(code):
     if not code or not isinstance(code, str):
         return None
     if not re.search(r'v7\s*\(\s*"', code) and not re.search(r'local\s+function\s+\w+\s*\(\s*\w+\s*\)\s*return\s+\w+\[\s*\w+\s*[-+]\s*\(\s*\d+\s*[-+]\s*\d+\s*\)\s*\]\s*end', code):
         return None
-    decoded = deobfuscatehelper(code)
+    decoded = _deobfuscate(code)
     if not decoded:
         return None
-    if removedead:
-        decoded = removedeadloops(decoded)
+    decoded = removedeadloops(decoded)
     payload = extractloadstring(decoded)
     if payload:
         result = cleanlua(payload)
     else:
         result = cleanlua(decoded)
-    if beautify:
-        result = beautifylua(result)
+    result = beautifylua(result)
     return result
 
 def removedeadloops(code):
@@ -89,7 +85,7 @@ def beautifylua(code):
             indent = max(0, indent - 1)
     return '\n'.join(result)
 
-def deobfuscatehelper(content):
+def _deobfuscate(content):
     pat = re.compile(r'v7\s*\(\s*"((?:\\.|[^"])*)"\s*,\s*"((?:\\.|[^"])*)"\s*\)')
     matches = list(pat.finditer(content))
     if not matches:
@@ -121,11 +117,5 @@ def deobfuscatehelper(content):
         return "\n".join(printcalls)
     return out if out else None
 
-def deobfuscatechaotic(code, beautify=False, removedead=False):
-    if matchcandidateevil(code):
-        return deobfuscatechaoticevil(code)
-    if matchcandidateold(code):
-        return deobfuscateold(code)
-    if matchcandidate(code):
-        return deobfuscatechaoticgood(code, beautify, removedead)
-    return None
+def deobfuscatechaotic(code):
+    return deobfuscatechaoticgood(code)
